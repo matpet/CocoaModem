@@ -13,6 +13,22 @@
 #import "Messages.h"
 #import "Modem.h"
 
+static NSColor *DeviceRGBColor( NSColor *color )
+{
+	NSColor *deviceColor ;
+
+	deviceColor = [ color colorUsingColorSpaceName:NSDeviceRGBColorSpace ] ;
+	return ( deviceColor ) ? deviceColor : color ;
+}
+
+static NSColor *WaterfallMixedColor( NSColor *fromColor, NSColor *toColor, CGFloat fraction )
+{
+	NSColor *mixedColor ;
+
+	mixedColor = [ DeviceRGBColor( fromColor ) blendedColorWithFraction:fraction ofColor:DeviceRGBColor( toColor ) ] ;
+	return ( mixedColor ) ? mixedColor : DeviceRGBColor( toColor ) ;
+}
+
 
 //  Assuming an Fs of 11025 Hz and a buffer of 4096 real samples, this produces an
 //  FFT of 2048 samples representing 5512.5 Hz (2.69 Hz/bin)
@@ -46,6 +62,10 @@
 		scrollWheelRate = 1.0 ;				// rate tuning changes with scroll wheel
 		wideWaterfall = NO ;
 		mostRecentTone[0] = mostRecentTone[1] = -1 ;
+		dynamicRange = 60.0 ;
+		dynamicRangeClip = 0.0 ;
+		waterfallBackgroundColor = [ [ NSColor colorWithCalibratedRed:0.0 green:0.0 blue:0.3 alpha:1.0 ] retain ] ;
+		waterfallPlotColor = [ [ NSColor colorWithCalibratedRed:1.0 green:0.0 blue:0.0 alpha:1.0 ] retain ] ;
 		memset( timeAverage, 0, 1024*sizeof( float ) ) ;
 		refreshRate = 1.0 ;
 		refreshCycle = 0.0 ;
@@ -69,6 +89,17 @@
 {
 	UInt32 background ;
 	int i, lsize ;
+
+	if ( initialize && image ) {
+		[ self setImage:nil ] ;
+		if ( bitmap ) {
+			[ image removeRepresentation:bitmap ] ;
+			[ bitmap release ] ;
+			bitmap = nil ;
+		}
+		[ image release ] ;
+		image = nil ;
+	}
 
 	if ( depth >= 24 ) {
 		background = intensity[0] ;
@@ -162,7 +193,7 @@
 	green = [ [ NSColor greenColor ] retain ] ;
 
 	thread = [ NSThread currentThread ] ;
-	[ self setDynamicRange:60.0 ] ;
+	[ self setDynamicRange:dynamicRange ] ;
 	
 	//	v1.03 handles the Max=c OS X 10.8 case (bitmapData changing)
 	bitmap = nil ;
@@ -176,6 +207,8 @@
 - (void)dealloc
 {
 	free( bitmaps[0] ) ;
+	[ waterfallBackgroundColor release ] ;
+	[ waterfallPlotColor release ] ;
 	if ( image ) {
 		if ( bitmap ) {
 			[ image removeRepresentation:bitmap ] ;
@@ -197,9 +230,11 @@
 {
 	NSColor *a, *b, *c, *d, *e ;
 	float v, map, inten, p, q ;
-	float r0, g0, b0, a0, r1, g1, b1, a1 ;
+	CGFloat r0, g0, b0, a0, r1, g1, b1, a1 ;
 	int i ;
 	
+	dynamicRange = value ;
+	dynamicRangeClip = clip ;
 	exponent = 0.25 ;
 	range = value + clip*2 ;
 	
@@ -219,7 +254,7 @@
 	}
 	//  create color scale, defined by 4 colors
 	//  use a 20000 element table to achieve 85 dB of dynamic range
-	a = [ NSColor colorWithCalibratedRed:0.0 green:0 blue:0.3 alpha:0 ] ;
+	a = DeviceRGBColor( waterfallBackgroundColor ) ;
 	b = [ NSColor colorWithCalibratedRed:0 green:0.1 blue:0.8 alpha:0 ] ;
 	c = [ NSColor colorWithCalibratedRed:0.0 green:0.5 blue:0.5 alpha:0 ] ;
 	d = [ NSColor colorWithCalibratedRed:0.7 green:0.7 blue:0 alpha:0 ] ;
@@ -274,6 +309,11 @@
 - (void)setDynamicRange:(float)value
 {
 	[ self setDynamicRange:value clip:0.0 ] ;
+}
+
+- (void)setWaterfallColorsWithBackground:(NSColor*)background plot:(NSColor*)plot
+{
+	return ;
 }
 
 - (void)setSideband:(int)which

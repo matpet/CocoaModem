@@ -53,7 +53,11 @@
 		int sideband ; // 0 = LSB, 1 = USB
 		float vfoOffset ;
 		float range ;
+		float dynamicRange ;
+		float dynamicRangeClip ;
 		float exponent ;
+		NSColor *waterfallBackgroundColor ;
+		NSColor *waterfallPlotColor ;
 		//  fft
 		CMFFT *spectrum ;
 		float timeSample[4096], freqBin[4096] ;
@@ -103,6 +107,7 @@
 	- (void)setSideband:(int)sideband ;
 	- (void)setOffset:(float)freq sideband:(int)sideband ;
 	- (void)setDynamicRange:(float)range ;
+	- (void)setWaterfallColorsWithBackground:(NSColor*)background plot:(NSColor*)plot ;
 	- (void)setWaterfallID:(int)index ;
 	- (void)moveToneTo:(float)tone receiver:(int)uniqueID ;
 	- (void)forceToneTo:(float)tone receiver:(int)uniqueID ;

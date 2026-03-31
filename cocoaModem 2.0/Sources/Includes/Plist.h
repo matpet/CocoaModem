@@ -349,6 +349,8 @@
 	#define kWFRTTYSubBackgroundColor	@"WFRTTY Background Color 2"
 	#define kWFRTTYMainPlotColor		@"WFRTTY Plot Color 1"
 	#define kWFRTTYSubPlotColor			@"WFRTTY Plot Color 2"
+	#define kWFRTTYMainWaterfallRange	@"WFRTTY Waterfall Range A"
+	#define kWFRTTYSubWaterfallRange	@"WFRTTY Waterfall Range B"
 	
 	#define kWFRTTYMainMark				@"WFRTTY Main Mark Frequencies"
 	#define kWFRTTYMainSpace			@"WFRTTY Main Space Frequencies"
@@ -506,6 +508,8 @@
 	#define kWBCWSubBackgroundColor		@"WBCW Background Color 2"
 	#define kWBCWMainPlotColor			@"WBCW Plot Color 1"
 	#define kWBCWSubPlotColor			@"WBCW Plot Color 2"
+	#define kWBCWMainWaterfallRange		@"WBCW Waterfall Range A"
+	#define kWBCWSubWaterfallRange		@"WBCW Waterfall Range B"
 	
 	#define kWBCWMainActive				@"WBCW Active A"
 	#define kWBCWMainSquelch			@"WBCW Squelch A"

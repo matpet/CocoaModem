@@ -7,6 +7,7 @@
 	
 	
 #import "ModemEqualizerPlot.h"
+#include <math.h>
 
 
 @implementation ModemEqualizerPlot
@@ -15,7 +16,8 @@
 {
 	NSSize size ;
 	int i,n ;
-	float x, dash[2] = { 2.0, 1.0 }, xp[41] ;
+	CGFloat dash[2] = { 2.0, 1.0 } ;
+	float x, xp[81] ;
 	
     self = [ super initWithFrame:frame ] ;
     if ( self ) {
@@ -23,6 +25,8 @@
 		size = bounds.size ;
 		width = size.width ;
 		height = size.height ;
+		if ( !isfinite( width ) || width <= 0.0 ) width = ( isfinite( frame.size.width ) && frame.size.width > 0.0 ) ? frame.size.width : 1.0 ;
+		if ( !isfinite( height ) || height <= 0.0 ) height = ( isfinite( frame.size.height ) && frame.size.height > 0.0 ) ? frame.size.height : 1.0 ;
 
 		plotColor = [ [ NSColor colorWithCalibratedRed:0.9 green:0.9 blue:0 alpha:1 ] retain ] ;
 		plot = nil ;
@@ -30,7 +34,7 @@
 		//  background
 		backgroundColor = [ [ NSColor colorWithDeviceRed:0 green:0.1 blue:0 alpha:1 ] retain ] ;
 		background = [ [ NSBezierPath alloc ] init ] ;
-		[ background appendBezierPathWithRect:bounds ] ;
+		[ background appendBezierPathWithRect:NSMakeRect( 0, 0, width, height ) ] ;
 		//  scale
 		scaleColor = [ [ NSColor colorWithCalibratedRed:0 green:1 blue:0.1 alpha:1 ] retain ] ;
 		scale = [ [ NSBezierPath alloc ] init ] ;
@@ -41,7 +45,7 @@
 			[ scale moveToPoint:NSMakePoint( x, 0 ) ] ;
 			[ scale lineToPoint:NSMakePoint( x, height ) ] ;
 		}
-		for ( i = 0; i < 41; i++ ) xp[i] = i*0.1 ;	//  flat response 
+		for ( i = 0; i < 81; i++ ) xp[i] = 0.0 ;	//  flat 0 dB response
 		[ self setResponse:xp ] ;
 	}
 	return self ;
@@ -51,13 +55,17 @@
 - (void)setResponse:(float*)array
 {
 	int i ;
-	float x, y ;
+	float x, y, response ;
 	
 	if ( plot ) [ plot release ] ;
 	plot = [ [ NSBezierPath alloc ] init ] ;
 	for ( i = 0; i < 81; i++ ) {
-		x = ( 0.1 + array[i]*0.24 )*width ;
+		response = array[i] ;
+		if ( !isfinite( response ) ) response = 0.0 ;
+		x = ( 0.1 + response*0.24 )*width ;
 		y = height*( 1.0 - i/82.0 ) - 8.0 ;
+		if ( !isfinite( x ) ) x = 0.0 ;
+		if ( !isfinite( y ) ) y = 0.0 ;
 		if ( i == 0 ) [ plot moveToPoint:NSMakePoint( x, y ) ] ; else [ plot lineToPoint:NSMakePoint( x, y ) ] ;
 	}
 }

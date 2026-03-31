@@ -500,12 +500,16 @@
 		[ super setTextColor:inTextColor sentColor:sentTColor backgroundColor:bgColor plotColor:pColor ] ;
 		[ a.view setBackgroundColor:bgColor ] ;
 		[ a.view setTextColor:inTextColor attribute:[ a.control textAttribute ] ] ;
+		[ a.control setBackgroundColor:bgColor ] ;
 		[ a.control setPlotColor:pColor ] ;
+		if ( waterfall[0] ) [ waterfall[0] setWaterfallColorsWithBackground:bgColor plot:pColor ] ;
 	}
 	else {
 		[ b.view setBackgroundColor:bgColor ] ;
 		[ b.view setTextColor:inTextColor attribute:[ b.control textAttribute ] ] ;
+		[ b.control setBackgroundColor:bgColor ] ;
 		[ b.control setPlotColor:pColor ] ;
+		if ( waterfall[1] ) [ waterfall[1] setWaterfallColorsWithBackground:bgColor plot:pColor ] ;
 	}
 }
 
@@ -519,8 +523,12 @@
 	[ a.view setTextColor:textColor attribute:[ a.control textAttribute ] ] ;
 	[ b.view setTextColor:textColor attribute:[ b.control textAttribute ] ] ;
 
+	[ a.control setBackgroundColor:bgColor ] ;
+	[ b.control setBackgroundColor:bgColor ] ;
 	[ a.control setPlotColor:plotColor ] ;
 	[ b.control setPlotColor:plotColor ] ;
+	if ( waterfall[0] ) [ waterfall[0] setWaterfallColorsWithBackground:bgColor plot:pColor ] ;
+	if ( waterfall[1] ) [ waterfall[1] setWaterfallColorsWithBackground:bgColor plot:pColor ] ;
 }
 
 //  whenever break-in button is set, this timer runs every 100 ms in the main thread
@@ -669,6 +677,8 @@
 	[ pref setInt:0 forKey:kWBCWTransmitChannel ] ;
 	[ pref setInt:1 forKey:kWBCWMainWaterfallNR ] ;
 	[ pref setInt:1 forKey:kWBCWSubWaterfallNR ] ;
+	[ pref setInt:60 forKey:kWBCWMainWaterfallRange ] ;
+	[ pref setInt:60 forKey:kWBCWSubWaterfallRange ] ;
 	
 	//  default CW keying parameters
 	[ pref setInt:0 forKey:kWBCWBreakin ] ;
@@ -709,6 +719,7 @@
 {
 	NSString *fontName ;
 	float fontSize ;
+	int waterfallRangeValue ;
 	int txChannel, i ;
 	
 	[ super updateFromPlistFromSuper:pref ] ;
@@ -716,6 +727,16 @@
 	//  v0.73
 	[ waterfallA setNoiseReductionState:[ pref intValueForKey:kWBCWMainWaterfallNR ] ] ;
 	[ waterfallB setNoiseReductionState:[ pref intValueForKey:kWBCWSubWaterfallNR ] ] ;
+	waterfallRangeValue = [ pref intValueForKey:kWBCWMainWaterfallRange ] ;
+	if ( waterfallRangeValue <= 0 ) waterfallRangeValue = 60 ;
+	[ dynamicRangeA selectItemWithTag:waterfallRangeValue ] ;
+	if ( [ dynamicRangeA selectedItem ] == nil ) [ dynamicRangeA selectItemWithTag:60 ] ;
+	waterfallRangeValue = [ pref intValueForKey:kWBCWSubWaterfallRange ] ;
+	if ( waterfallRangeValue <= 0 ) waterfallRangeValue = 60 ;
+	[ dynamicRangeB selectItemWithTag:waterfallRangeValue ] ;
+	if ( [ dynamicRangeB selectedItem ] == nil ) [ dynamicRangeB selectItemWithTag:60 ] ;
+	[ self dynamicRangeChanged:dynamicRangeA ] ;
+	[ self dynamicRangeChanged:dynamicRangeB ] ;
 
 	fontName = [ pref stringValueForKey:kWBCWFontA ] ;
 	fontSize = [ pref floatValueForKey:kWBCWFontSizeA ] ;
@@ -816,6 +837,8 @@
 		//  v0.73
 	[ pref setInt:[ waterfallA noiseReductionState ] forKey:kWBCWMainWaterfallNR ] ;
 	[ pref setInt:[ waterfallB noiseReductionState ] forKey:kWBCWSubWaterfallNR ] ;
+	[ pref setInt:[ [ dynamicRangeA selectedItem ] tag ] forKey:kWBCWMainWaterfallRange ] ;
+	[ pref setInt:[ [ dynamicRangeB selectedItem ] tag ] forKey:kWBCWSubWaterfallRange ] ;
 	
 	[ (CWConfig*)configA retrieveForPlist:pref rttyRxControl:a.control ] ;
 	[ (CWConfig*)configB retrieveForPlist:pref rttyRxControl:b.control ] ;

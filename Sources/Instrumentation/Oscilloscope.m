@@ -477,4 +477,17 @@ static float timeConstants[] = { 0.0, 0.2, 0.5, 1.5, 4.0 } ;
 	mux = 0 ;
 }
 
+- (void)setBackgroundColor:(NSColor*)color
+{
+	NSColor *newBackgroundColor ;
+
+	if ( color == nil ) return ;
+	newBackgroundColor = [ color colorUsingColorSpace:[ NSColorSpace deviceRGBColorSpace ] ] ;
+	if ( newBackgroundColor == nil ) newBackgroundColor = color ;
+	[ newBackgroundColor retain ] ;
+	[ backgroundColor release ] ;
+	backgroundColor = newBackgroundColor ;
+	[ self setNeedsDisplay:YES ] ;
+}
+
 @end

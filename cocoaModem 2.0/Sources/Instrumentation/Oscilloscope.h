@@ -50,6 +50,7 @@
 	}
 
 	- (void)setDisplayStyle:(int)inStyle plotColor:(NSColor*)plotColor ;
+	- (void)setBackgroundColor:(NSColor*)color ;
 	- (void)setTonePairMarker:(const CMTonePair*)tonepair ;
 	- (void)addData:(CMDataStream*)stream isBaudot:(Boolean)inBaudot timebase:(int)timebase ;
 	- (void)selectTimeConstant:(int)n ;

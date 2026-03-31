@@ -39,6 +39,7 @@
 	- (void)hideScopeOnDeactivation:(Boolean)hide ;
 	- (void)setTitle:(NSString*)title ;
 	- (void)setPlotColor:(NSColor*)color ;
+	- (void)setBackgroundColor:(NSColor*)color ;
 	
 	- (void)connect:(int)button to:(CMTappedPipe*)pipe title:(NSString*)name baudotMarkers:(Boolean)enableBaudot timebase:(int)timebase ;
 	

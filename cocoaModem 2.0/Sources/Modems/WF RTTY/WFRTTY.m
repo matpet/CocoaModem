@@ -423,11 +423,13 @@
 		[ a.view setBackgroundColor:bgColor ] ;
 		[ a.view setTextColor:inTextColor attribute:[ a.control textAttribute ] ] ;
 		[ a.control setPlotColor:pColor ] ;
+		if ( waterfall[0] ) [ waterfall[0] setWaterfallColorsWithBackground:bgColor plot:pColor ] ;
 	}
 	else {
 		[ b.view setBackgroundColor:bgColor ] ;
 		[ b.view setTextColor:inTextColor attribute:[ b.control textAttribute ] ] ;
 		[ b.control setPlotColor:pColor ] ;
+		if ( waterfall[1] ) [ waterfall[1] setWaterfallColorsWithBackground:bgColor plot:pColor ] ;
 	}
 }
 
@@ -443,6 +445,8 @@
 
 	[ a.control setPlotColor:plotColor ] ;
 	[ b.control setPlotColor:plotColor ] ;
+	if ( waterfall[0] ) [ waterfall[0] setWaterfallColorsWithBackground:bgColor plot:pColor ] ;
+	if ( waterfall[1] ) [ waterfall[1] setWaterfallColorsWithBackground:bgColor plot:pColor ] ;
 }
 
 - (void)setupDefaultPreferencesFromSuper:(Preferences*)pref
@@ -466,6 +470,8 @@
 	[ pref setFloat:14.0 forKey:kWFRTTYTxFontSize ] ;
 	[ pref setInt:1 forKey:kRTTYMainWaterfallNR ] ;
 	[ pref setInt:1 forKey:kRTTYSubWaterfallNR ] ;
+	[ pref setInt:60 forKey:kWFRTTYMainWaterfallRange ] ;
+	[ pref setInt:60 forKey:kWFRTTYSubWaterfallRange ] ;
 		
 	[ pref setInt:0 forKey:kWFRTTYTransmitChannel ] ;
 	[ pref setInt:0 forKey:kWFRTTYLockA ] ;
@@ -512,6 +518,7 @@
 {
 	NSString *fontName ;
 	float fontSize ;
+	int waterfallRangeValue ;
 	int txChannel ;
 	Boolean locked ;
 	
@@ -549,6 +556,16 @@
 	//  v0.73
 	[ waterfallA setNoiseReductionState:[ pref intValueForKey:kRTTYMainWaterfallNR ] ] ;
 	[ waterfallB setNoiseReductionState:[ pref intValueForKey:kRTTYSubWaterfallNR ] ] ;
+	waterfallRangeValue = [ pref intValueForKey:kWFRTTYMainWaterfallRange ] ;
+	if ( waterfallRangeValue <= 0 ) waterfallRangeValue = 60 ;
+	[ dynamicRangeA selectItemWithTag:waterfallRangeValue ] ;
+	if ( [ dynamicRangeA selectedItem ] == nil ) [ dynamicRangeA selectItemWithTag:60 ] ;
+	waterfallRangeValue = [ pref intValueForKey:kWFRTTYSubWaterfallRange ] ;
+	if ( waterfallRangeValue <= 0 ) waterfallRangeValue = 60 ;
+	[ dynamicRangeB selectItemWithTag:waterfallRangeValue ] ;
+	if ( [ dynamicRangeB selectedItem ] == nil ) [ dynamicRangeB selectItemWithTag:60 ] ;
+	[ self dynamicRangeChanged:dynamicRangeA ] ;
+	[ self dynamicRangeChanged:dynamicRangeB ] ;
 	
 	[ manager showSplash:@"Updating WFRTTY configurations" ] ;
 	[ configA updateFromPlist:pref rttyRxControl:a.control ] ;	
@@ -595,6 +612,8 @@
 	//  v0.73
 	[ pref setInt:[ waterfallA noiseReductionState ] forKey:kRTTYMainWaterfallNR ] ;
 	[ pref setInt:[ waterfallB noiseReductionState ] forKey:kRTTYSubWaterfallNR ] ;
+	[ pref setInt:[ [ dynamicRangeA selectedItem ] tag ] forKey:kWFRTTYMainWaterfallRange ] ;
+	[ pref setInt:[ [ dynamicRangeB selectedItem ] tag ] forKey:kWFRTTYSubWaterfallRange ] ;
 
 	[ configA retrieveForPlist:pref rttyRxControl:a.control ] ;
 	[ configB retrieveForPlist:pref rttyRxControl:b.control ] ;
@@ -743,9 +762,14 @@
 - (void)dynamicRangeChanged:(id)sender
 {
 	RTTYWaterfall *w ;
+	NSMenuItem *item ;
+	int rangeValue ;
 
 	w = ( sender == dynamicRangeA ) ? waterfall[0] : waterfall[1] ;
-	[ w setDynamicRange:[ [ sender selectedItem ] tag ]*1.0 ] ;
+	item = [ sender selectedItem ] ;
+	rangeValue = ( item ) ? [ item tag ] : 60 ;
+	if ( rangeValue <= 0 ) rangeValue = 60 ;
+	[ w setDynamicRange:rangeValue*1.0 ] ;
 }
 
 - (void)transmitSelectChanged

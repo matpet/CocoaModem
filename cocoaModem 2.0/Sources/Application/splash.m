@@ -34,6 +34,7 @@
 {
 	if ( active ) {
 		[ splashMsg setStringValue:msg ] ;
+		[ splashScreen orderFront:nil ] ;
 		[ splashScreen display ] ;
 	}
 }
@@ -41,9 +42,11 @@
 - (void)remove
 {
 	if ( active ) {
-		[ splashScreen orderBack:self ] ;
+		[ splashScreen orderOut:nil ] ;
 		[ splashScreen setLevel:NSNormalWindowLevel ] ;
-		[ splashScreen release ] ;
+		[ splashScreen close ] ;
+		splashScreen = nil ;
+		splashMsg = nil ;
 	}
 	active = NO ;
 }

@@ -11,6 +11,7 @@
 	#import <Cocoa/Cocoa.h>
 	#import "CMFFT.h"
 	#import "Boxcar.h"
+	#import "Clears.h"
 	#import "hadamard.h"
 	
 	@class CWMatchedFilter ;

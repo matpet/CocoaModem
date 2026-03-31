@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>cocoaModem 2.0</string>
+	<string>cocoModem 2.0Upgrade1-LA0FA</string>
 	<key>CFBundleIconFile</key>
 	<string>cocoaModem.icns</string>
 	<key>CFBundleIdentifier</key>
@@ -20,6 +20,8 @@
 	<string>1.03</string>
 	<key>NSAppleScriptEnabled</key>
 	<string>YES</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>cocoaModem needs microphone access to receive audio from the selected input device.</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>

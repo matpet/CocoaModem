@@ -8,6 +8,7 @@
 	#define	_SLEEPMANAGER_H_
 
 	#import <Cocoa/Cocoa.h>
+	#import <IOKit/pwr_mgt/IOPMLib.h>
 	#include "ModemManager.h"
 
 

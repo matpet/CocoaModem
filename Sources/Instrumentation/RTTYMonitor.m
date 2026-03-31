@@ -129,6 +129,11 @@ static NSString *freqLabel[] = { @"500", @"1000", @"1500", @"2000", @"2500" } ;
 	[ scopeView setDisplayStyle:currentStyle plotColor:color ] ;
 }
 
+- (void)setBackgroundColor:(NSColor*)color
+{
+	[ scopeView setBackgroundColor:color ] ;
+}
+
 - (void)hideScopeOnDeactivation:(Boolean)hide
 {
 	[ [ scopeView window ] setHidesOnDeactivate:hide ] ;
