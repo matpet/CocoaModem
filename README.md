@@ -10,6 +10,8 @@ This public repository contains an updated build of cocoaModem that has been bro
 The original cocoaModem application was created by W7AY, Kok Chen.
 This repository preserves that work and documents the compatibility updates needed to keep the application running on current macOS releases.
 
+See ATTRIBUTION.md for project provenance and attribution notes.
+
 ## Current Status
 
 - Builds as a universal macOS application for Apple Silicon and Intel.
@@ -20,3 +22,21 @@ This repository preserves that work and documents the compatibility updates need
 
 - The main Xcode project is in `cocoaModem 2.0/cocoaModem 2.0.xcodeproj`.
 - This repository focuses on compatibility and maintenance updates, not a rewrite of the original application.
+
+## Repository Scope
+
+- Compatibility fixes for current macOS releases.
+- Preservation of the original application structure and behavior where practical.
+- No large-scale rewrite or UI redesign.
+
+## Building
+
+- Open `cocoaModem 2.0/cocoaModem 2.0.xcodeproj` in Xcode.
+- Build a universal binary when distributing to both Apple Silicon and Intel Macs.
+- Current compatibility work has been validated on macOS 15.7.x.
+
+## Release History
+
+- Original cocoaModem created by W7AY, Kok Chen.
+- Repository updated to restore compatibility with current macOS releases.
+- Current modernization pass includes universal Apple Silicon and Intel builds, Intel launch fixes, and native system appearance behavior on modern macOS.

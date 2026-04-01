@@ -80,7 +80,6 @@ int main(int argc, const char *argv[])
 	exit( 0 ) ;
 	#endif
 	
-	AudioHardwareUnload() ;
 	//	use the current thread as the CoreAudio HAL's run loop
 	//  CFRunLoopRef runLoop = CFRunLoopGetCurrent() ;
 	//  AudioHardwareSetProperty( kAudioHardwarePropertyRunLoop, sizeof(CFRunLoopRef), &runLoop ) ;
