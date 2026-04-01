@@ -492,8 +492,7 @@ NSThread *mainThread ;
 
 	//  select UI (must be set up before modems, see createModems futher down)
 	[ stdManager setupWindow:isBrushedMetal lite:isLite ] ;	
-	
-	[ stdManager useSmoothPattern:YES ] ;
+
 	[ stdManager updateQSOWindow ] ;
 	
 	//  don't allocate About panel until needed

@@ -291,7 +291,7 @@
 - (void)setColor:(NSColor*)color forKey:(NSString*)key
 {
 	NSNumber *r, *g, *b ;
-	float red, green, blue, alpha ;
+	CGFloat red, green, blue, alpha ;
 	
 	[ color getRed:&red green:&green blue:&blue alpha:&alpha ] ;
 	r = @(red) ;

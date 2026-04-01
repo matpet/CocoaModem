@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>cocoModem 2.0Upgrade1-LA0FA</string>
+	<string>cocoaModem 2.0</string>
 	<key>CFBundleIconFile</key>
 	<string>cocoaModem.icns</string>
 	<key>CFBundleIdentifier</key>

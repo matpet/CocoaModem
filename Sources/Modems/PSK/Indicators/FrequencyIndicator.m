@@ -105,7 +105,7 @@
 {
 	NSColor *a, *b, *c, *d ;
 	float v, map, inten, p ;
-	float r0, g0, b0, a0, r1, g1, b1, a1 ;
+	CGFloat r0, g0, b0, a0, r1, g1, b1, a1 ;
 	int i ;
 	
 	exponent = 0.25 ;

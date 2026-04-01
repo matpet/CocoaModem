@@ -7,8 +7,25 @@
 
 
 #import "HellDisplay.h"
-#include "DisplayColor.h"
 #include "Messages.h"
+
+static UInt32 HellDisplayMillionsColor( float r, float g, float b )
+{
+	#if __BIG_ENDIAN__
+	return ( (int)(r*255.5) << 24 ) + ( (int)(g*255.5) << 16 ) + ( (int)(b*255.5) << 8 ) + 0xff ;
+	#else
+	return ( (int)(r*255.5) ) + ( (int)(g*255.5) << 8 ) + ( (int)(b*255.5) << 16 ) + 0xff000000 ;
+	#endif
+}
+
+static UInt32 HellDisplayThousandsColor( float r, float g, float b )
+{
+	#if __BIG_ENDIAN__
+	return ( (int)(r*15.5) << 12 ) + ( (int)(g*15.5) << 8 ) + ( (int)(b*15.5) << 4 ) + 0xf ;
+	#else
+	return ( (int)(r*15.5) << 4 ) + ( (int)(g*15.5) ) + ( (int)(b*15.5) << 12 ) + 0xf00 ;
+	#endif
+}
 
 
 @implementation HellDisplay
@@ -18,7 +35,7 @@
 
 - (void)setGrayscale:(NSColor*)back to:(NSColor*)fore index:(int)index
 {
-	float r, g, b, r0, g0, b0, r1, g1, b1, t, u, alpha ;
+	CGFloat r, g, b, r0, g0, b0, r1, g1, b1, t, u, alpha ;
 	int i ;
 	UInt32 gray ;
 	
@@ -35,11 +52,11 @@
 		b = u*b0 + t *b1 ;
 		
 		if ( depth >= 24 ) {
-			gray = [ DisplayColor millionsOfColorsFromRed:r green:g blue:b ] ;
+			gray = HellDisplayMillionsColor( r, g, b ) ;
 			if ( index == 0 ) intensity[i] = gray ; else echo[i] = gray ;
 		}
 		else {
-			gray = [ DisplayColor thousandsOfColorsFromRed:r green:g blue:b ] ;
+			gray = HellDisplayThousandsColor( r, g, b ) ;
 			if ( index == 0 ) intensity[i] = gray ; else echo[i] = gray ;
 		}
 	}
@@ -97,10 +114,7 @@
 		
 		//  check window depth
 		depth = NSBitsPerPixelFromDepth( [ NSWindow defaultDepthLimit ] ) ;  //  m = 24, t = 12, 256 = 8
-		if ( depth < 24 ) {
-			[ Messages alertWithMessageText:NSLocalizedString( @"Use Millions of Colors", nil ) informativeText:NSLocalizedString( @"Use Display Preferences", nil ) ] ;
-			exit( 0 ) ;
-		}	
+		if ( depth < 24 ) depth = 32 ;
 		bsize = [ self bounds ].size ;
 		width = bsize.width ;  
 		height = bsize.height ;  

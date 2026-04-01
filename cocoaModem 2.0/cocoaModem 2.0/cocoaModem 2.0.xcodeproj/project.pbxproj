@@ -3299,7 +3299,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD)";
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = "";
@@ -3314,7 +3314,7 @@
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				PRODUCT_NAME = "cocoModem 2.0Upgrade1-LA0FA";
+				PRODUCT_NAME = "cocoaModem 2.0";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
 			};
@@ -3324,7 +3324,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD)";
 				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = YES;
 				FRAMEWORK_SEARCH_PATHS = /Library/Frameworks;
@@ -3337,7 +3337,7 @@
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				PRODUCT_NAME = "cocoModem 2.0Upgrade1-LA0FA";
+				PRODUCT_NAME = "cocoaModem 2.0";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
 			};
@@ -3347,7 +3347,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				ARCHS = "$(ARCHS_STANDARD)";
 				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(SRCROOT)",
@@ -3365,7 +3365,7 @@
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
-				PRODUCT_NAME = "cocoModem 2.0Upgrade1-LA0FA";
+				PRODUCT_NAME = "cocoaModem 2.0";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
 			};

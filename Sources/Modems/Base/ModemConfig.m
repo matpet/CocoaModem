@@ -261,7 +261,7 @@
 //  set preferences to an NSColor (version 1)
 - (void)setColorRed:(NSString*)rTag green:(NSString*)gTag blue:(NSString*)bTag fromColor:(NSColor*)color into:(Preferences*)pref
 {
-	float red, green, blue, alpha ;
+	CGFloat red, green, blue, alpha ;
 	
 	[ color getRed:&red green:&green blue:&blue alpha:&alpha ] ;
 	[ pref setFloat:red forKey:rTag ] ;
