@@ -20,6 +20,8 @@
 	<string>1.03</string>
 	<key>NSAppleScriptEnabled</key>
 	<string>YES</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>cocoaModem needs Automation access to control helper applications and external logging/keyer software via AppleScript.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>cocoaModem needs microphone access to receive audio from the selected input device.</string>
 	<key>NSMainNibFile</key>

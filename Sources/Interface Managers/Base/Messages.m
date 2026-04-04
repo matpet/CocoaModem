@@ -75,6 +75,10 @@ static Messages *mainLog ;
 		case -128:
 			//  user cancelled
 			return ;
+		case -1743:
+			nstr = NSLocalizedString( @"Not authorized to send Apple events", nil ) ;
+			msg = NSLocalizedString( @"macOS denied Automation access for this AppleScript request. Enable Automation for cocoaModem in System Settings > Privacy & Security > Automation, or reset the app's Apple Events permissions and try again.", nil ) ;
+			break ;
 		case -1703:
 			nstr = NSLocalizedString( @"Wrong data type", nil ) ;
 			break ;
@@ -88,7 +92,8 @@ static Messages *mainLog ;
 		}
 		else {
 			errString = (char*)[ nstr cStringUsingEncoding:NSUTF8StringEncoding ] ;
-			sprintf( str, "%s for %s script.", errString, from ) ;
+			if ( msg && [ msg length ] > 0 ) sprintf( str, "%s for %s script.\n\nError detail: %s", errString, from, [ msg cStringUsingEncoding:kTextEncoding ] ) ;
+			else sprintf( str, "%s for %s script.", errString, from ) ;
 		}
 		[ self alertWithMessageText:NSLocalizedString( @"AppleScript error", nil ) informativeText:[ NSString stringWithCString:str encoding:kTextEncoding ] ] ;
 	}
