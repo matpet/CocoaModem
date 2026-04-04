@@ -13,7 +13,9 @@
 
 typedef struct {
 	MicroKeyer *keyer ;
+	NSString *path ;
 	int type ;
+	int serialLine ;
 	Boolean enabled ;
 } Interfaces ;
 
@@ -23,6 +25,7 @@ typedef struct {
 #define	kFSKType		3
 #define	kOOKType		4
 #define	kPFSKType		5
+#define	kSerialFSKType	6
 
 
 @interface FSK : NSObject {	

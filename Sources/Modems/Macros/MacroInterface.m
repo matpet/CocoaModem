@@ -97,10 +97,14 @@
 - (void)executeMacroString:(NSString*)macro
 {
 	if ( macro ) [ transmitView insertAtEnd:macro ] ;
+	[ self externalTransmitTextAppended ] ;
 	
 	if ( transmitCount > 0 ) {
 		//  keep transmit on if needed
-		if ( transmitState == NO ) [ self changeTransmitStateTo:YES ] ;
+		if ( transmitState == NO ) {
+			[ self changeTransmitStateTo:YES ] ;
+			[ self externalTransmitTextAppended ] ;
+		}
 	}
 }
 

@@ -17,6 +17,15 @@
 
 	#define	kDigiKeyerFSKIndex		0
 	#define	kMicroKeyerFSKIndex		1
+	#define	kSerialDTRLine			0
+	#define	kSerialRTSLine			1
+
+	typedef struct {
+		int token ;
+		int line ;
+		NSString *path ;
+		NSString *name ;
+	} SerialFSKPort ;
 
 	typedef enum _FSKShiftState {
 		kLTRSshift = 0,
@@ -27,10 +36,16 @@
 	#define	FIGSMASK	0x200
 	
 	@interface FSKHub : KeyerInterface {
-		//  µH Router
+		//  ï¿½H Router
 		Boolean fskBusy ;
 		
 		int currentFd ;
+		int currentPortToken ;
+		int currentSerialLine ;
+		float currentBitPeriod ;
+		int currentStopBits ;
+		Boolean serialInvert ;
+		Boolean serialMode ;
 		FSKShiftState shift ;
 		//  the following are for polling flags channel
 		fd_set selectSet ;
@@ -53,6 +68,8 @@
 		Boolean spaceFollowedFIGS ;								//  use robust mode to force compatibility of figs followed by space
 		int implicitState ;
 		int robustCount ;
+		SerialFSKPort serialPorts[64] ;
+		int serialPortCount ;
 	}
 	
 	- (int)currentBaudotCharacter ;								//  v0.88 feedback to aural monitor
@@ -63,6 +80,7 @@
 	- (void)closeFSKConnections ;
 	
 	- (void)setUSOS:(Boolean)state ;							//  v0.84
+	- (int)serialPortTokenForPath:(NSString*)path line:(int)line name:(NSString*)name ;
 	
 	//  returns port number, or 0 if not available
 	- (int)digiKeyerFSKPort ;

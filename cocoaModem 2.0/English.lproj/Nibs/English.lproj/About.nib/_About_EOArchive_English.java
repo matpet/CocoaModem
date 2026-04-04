@@ -142,7 +142,7 @@ public class _About_EOArchive_English extends com.webobjects.eoapplication.EOArc
         _setFontForComponent(_nsTextField4, "Verdana", 16, Font.PLAIN);
         _nsTextField4.setEditable(false);
         _nsTextField4.setOpaque(false);
-        _nsTextField4.setText("cocoaModem 2.0");
+        _nsTextField4.setText("cocoaModem 2.1rc1");
         _nsTextField4.setHorizontalAlignment(javax.swing.JTextField.CENTER);
         _nsTextField4.setSelectable(false);
         _nsTextField4.setEnabled(true);

@@ -140,7 +140,7 @@ static float stopDuration[3] = { 1.0, 1.5, 2.0 } ;
 	if ( !isTransmit && !configOpen ) {
 		toneIndex = 0 ;
 		[ modemDest stopSampling ] ;
-		[ afsk appendString:"|" clearExistingCharacters:NO ] ;  //  send a long mark
+		[ afsk appendString:"" clearExistingCharacters:YES ] ;
 		[ modemDest startSampling ] ;
 		if ( transmitButton ) {
 			[ transmitButton setTitle:NSLocalizedString( @"Receive", nil ) ] ;

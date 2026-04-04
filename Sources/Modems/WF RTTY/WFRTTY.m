@@ -373,7 +373,9 @@
 	FSK *fsk ;
 	WFRTTYConfig *cfg ;
 	int index, ook, transmitType ;
+	Boolean wasTransmit ;
 		
+	wasTransmit = transmitState ;
 	if ( state ) {
 		txFixed = [ self transmitIsLocked:transmitChannel ] ;
 		//  if transmit tones are locked, set transmit with locked tone
@@ -391,6 +393,7 @@
 	}
 	[ [ a.receiver rttyAuralMonitor ] setTransmitState:state transmitType:transmitType ] ;							//  v0.88b
 
+	if ( state == YES && wasTransmit == NO ) [ self ptt:YES ] ;
 	transmitState = [ txConfig turnOnTransmission:state button:transmitButton fsk:fsk ook:ook ] ;					//  v0.85
 	[ self performSelectorOnMainThread:@selector(finishTransmitStateChange) withObject:nil waitUntilDone:YES ] ;	//  v0.65
 }

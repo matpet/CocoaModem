@@ -13,3 +13,4 @@
 #define	kOOKMenuTitle			@"OOK"					//  v0.85
 
 #define	kFSKShortMenuTitle		@"FSK: "				//  v0.89
+#define	kExternalFSKMenuTitle	@"External FSK"

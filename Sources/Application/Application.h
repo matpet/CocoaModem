@@ -75,6 +75,7 @@
 		About *about ;
 		//  AppleScript
 		AppDelegate *appleScript ;
+		id xmlrpcServer ;
 		
 		//  call/name selection
 		NSTextView *selectedTextView ;

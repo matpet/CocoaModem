@@ -11,6 +11,51 @@
 #import "FSKHub.h"
 #import "FSKMenu.h"
 #import "RTTY.h"
+#include <IOKit/IOKitLib.h>
+#include <IOKit/serial/IOSerialKeys.h>
+#include <IOKit/IOBSD.h>
+
+#define kSerialRTSMenuPrefix @"External FSK (RTS): "
+#define kSerialDTRMenuPrefix @"External FSK (DTR): "
+
+static int findSerialPorts( NSString **path, NSString **stream, int maxPorts )
+{
+	kern_return_t kernResult ;
+	mach_port_t masterPort ;
+	io_iterator_t serialPortIterator ;
+	io_object_t modemService ;
+	CFMutableDictionaryRef classesToMatch ;
+	CFTypeRef cfString ;
+	int count ;
+
+	kernResult = IOMasterPort( MACH_PORT_NULL, &masterPort ) ;
+	if ( kernResult != KERN_SUCCESS ) return 0 ;
+
+	classesToMatch = IOServiceMatching( kIOSerialBSDServiceValue ) ;
+	if ( classesToMatch == NULL ) return 0 ;
+
+	CFDictionarySetValue( classesToMatch, CFSTR( kIOSerialBSDTypeKey ), CFSTR( kIOSerialBSDAllTypes ) ) ;
+	kernResult = IOServiceGetMatchingServices( masterPort, classesToMatch, &serialPortIterator ) ;
+	if ( kernResult != KERN_SUCCESS ) return 0 ;
+
+	count = 0 ;
+	while ( ( modemService = IOIteratorNext( serialPortIterator ) ) && count < maxPorts ) {
+		cfString = IORegistryEntryCreateCFProperty( modemService, CFSTR( kIOTTYDeviceKey ), kCFAllocatorDefault, 0 ) ;
+		if ( cfString ) {
+			stream[count] = [ (NSString*)cfString retain ] ;
+			CFRelease( cfString ) ;
+			cfString = IORegistryEntryCreateCFProperty( modemService, CFSTR( kIOCalloutDeviceKey ), kCFAllocatorDefault, 0 ) ;
+			if ( cfString ) {
+				path[count] = [ (NSString*)cfString retain ] ;
+				CFRelease( cfString ) ;
+				count++ ;
+			}
+		}
+		IOObjectRelease( modemService ) ;
+	}
+	IOObjectRelease( serialPortIterator ) ;
+	return count ;
+}
 
 @implementation FSK
 
@@ -20,7 +65,8 @@
 	NSArray *keyers ;
 	MicroKeyer *keyer ;
 	Application *application ;
-	int i, n, digiKeyers, microKeyers, menuItems ;
+	NSString *path[32], *stream[32], *title ;
+	int i, n, digiKeyers, microKeyers, menuItems, serialPorts ;
 
 	self = [ super init ] ;
 	if ( self ) {
@@ -36,11 +82,15 @@
 		[ menu addItemWithTitle:kAFSKMenuTitle ] ;
 		interfaces[0].type = kAFSKType ;
 		interfaces[0].keyer = nil ;
+		interfaces[0].path = nil ;
+		interfaces[0].serialLine = 0 ;
 		interfaces[0].enabled = YES ;
 		
 		[ [ menu menu ] addItem:[ NSMenuItem separatorItem ] ] ;
 		interfaces[1].type = kSeparatorType ;
 		interfaces[1].keyer = nil ;
+		interfaces[1].path = nil ;
+		interfaces[1].serialLine = 0 ;
 		interfaces[1].enabled = NO ;
 		
 		digiKeyers = [ digitalInterfaces numberOfDigiKeyers ] ;
@@ -52,11 +102,15 @@
 			if ( keyer == nil ) {
 				interfaces[2].type = kBadType ;
 				interfaces[2].keyer = nil ;
+				interfaces[2].path = nil ;
+				interfaces[2].serialLine = 0 ;
 				interfaces[2].enabled = NO ;
 			}
 			else {
 				interfaces[2].type = kFSKType ;
 				interfaces[2].keyer = keyer ;
+				interfaces[2].path = nil ;
+				interfaces[2].serialLine = 0 ;
 				interfaces[2].enabled = YES ;
 			}
 			
@@ -65,11 +119,15 @@
 			if ( keyer == nil ) {
 				interfaces[3].type = kBadType ;
 				interfaces[3].keyer = nil ;
+				interfaces[3].path = nil ;
+				interfaces[3].serialLine = 0 ;
 				interfaces[3].enabled = NO ;
 			}
 			else {
 				interfaces[3].type = kFSKType ;
 				interfaces[3].keyer = keyer ;
+				interfaces[3].path = nil ;
+				interfaces[3].serialLine = 0 ;
 				interfaces[3].enabled = YES ;
 			}
 			menuItems = 4 ;
@@ -85,26 +143,79 @@
 					[ menu addItemWithTitle:[ NSString stringWithFormat:@"%@ %s", kFSKShortMenuTitle, [ keyer keyerID ] ] ] ;
 					interfaces[menuItems].type = kFSKType ;
 					interfaces[menuItems].keyer = keyer ;
+					interfaces[menuItems].path = nil ;
+					interfaces[menuItems].serialLine = 0 ;
 					interfaces[menuItems].enabled = YES ;
 					menuItems++ ;
 				}
 			}
 		}
+
+		serialPorts = findSerialPorts( &path[0], &stream[0], 32 ) ;
+		if ( serialPorts > 0 ) {
+			[ [ menu menu ] addItem:[ NSMenuItem separatorItem ] ] ;
+			interfaces[menuItems].type = kSeparatorType ;
+			interfaces[menuItems].keyer = nil ;
+			interfaces[menuItems].path = nil ;
+			interfaces[menuItems].serialLine = 0 ;
+			interfaces[menuItems].enabled = NO ;
+			menuItems++ ;
+
+			[ menu addItemWithTitle:kExternalFSKMenuTitle ] ;
+			interfaces[menuItems].type = kSeparatorType ;
+			interfaces[menuItems].keyer = nil ;
+			interfaces[menuItems].path = nil ;
+			interfaces[menuItems].serialLine = 0 ;
+			interfaces[menuItems].enabled = NO ;
+			menuItems++ ;
+
+			for ( i = 0; i < serialPorts && menuItems < 30; i++ ) {
+				title = [ kSerialRTSMenuPrefix stringByAppendingString:stream[i] ] ;
+				[ menu addItemWithTitle:title ] ;
+				interfaces[menuItems].type = kSerialFSKType ;
+				interfaces[menuItems].keyer = nil ;
+				interfaces[menuItems].path = [ path[i] retain ] ;
+				interfaces[menuItems].serialLine = 1 ;
+				interfaces[menuItems].enabled = YES ;
+				menuItems++ ;
+
+				if ( menuItems >= 31 ) break ;
+
+				title = [ kSerialDTRMenuPrefix stringByAppendingString:stream[i] ] ;
+				[ menu addItemWithTitle:title ] ;
+				interfaces[menuItems].type = kSerialFSKType ;
+				interfaces[menuItems].keyer = nil ;
+				interfaces[menuItems].path = [ path[i] retain ] ;
+				interfaces[menuItems].serialLine = 0 ;
+				interfaces[menuItems].enabled = YES ;
+				menuItems++ ;
+			}
+			for ( i = 0; i < serialPorts; i++ ) {
+				[ path[i] release ] ;
+				[ stream[i] release ] ;
+			}
+		}
 		[ [ menu menu ] addItem:[ NSMenuItem separatorItem ] ] ;
 		interfaces[menuItems].type = kSeparatorType ;
 		interfaces[menuItems].keyer = nil ;
+		interfaces[menuItems].path = nil ;
+		interfaces[menuItems].serialLine = 0 ;
 		interfaces[menuItems].enabled = NO ;
 		menuItems++ ;
 		
 		[ menu addItemWithTitle:kDigiKeyerOOKMenuTitle ] ;
 		interfaces[menuItems].type = kPFSKType ;
 		interfaces[menuItems].keyer = nil ;
+		interfaces[menuItems].path = nil ;
+		interfaces[menuItems].serialLine = 0 ;
 		interfaces[menuItems].enabled = YES ;
 		menuItems++ ;
 		
 		[ menu addItemWithTitle:kOOKMenuTitle ] ;
 		interfaces[menuItems].type = kOOKType ;
 		interfaces[menuItems].keyer = nil ;
+		interfaces[menuItems].path = nil ;
+		interfaces[menuItems].serialLine = 0 ;
 		interfaces[menuItems].enabled = YES ;
 	}
 	return self ;
@@ -172,7 +283,19 @@
 
 - (int)selectedFSKPort
 {
-	return [ self fskPortForName:[ menu titleOfSelectedItem ] ] ;
+	NSString *title ;
+	NSMenu *items ;
+	int n ;
+
+	title = [ menu titleOfSelectedItem ] ;
+	items = [ menu menu ] ;
+	n = [ items indexOfItemWithTitle:title ] ;
+	if ( n < 0 ) return 0 ;
+
+	if ( interfaces[n].type == kSerialFSKType ) {
+		return [ hub serialPortTokenForPath:interfaces[n].path line:interfaces[n].serialLine name:title ] ;
+	}
+	return [ self fskPortForName:title ] ;
 }
 
 //  set fd to port selected by menu (or 0 if error)

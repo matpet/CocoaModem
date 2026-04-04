@@ -22,6 +22,7 @@
 #import "MacroScripts.h"
 #import "Messages.h"
 #import "modemTypes.h"
+#import "Modem.h"
 #import "ModemSleepManager.h"
 #import "Plist.h"
 #import "Preferences.h"
@@ -29,6 +30,8 @@
 #import "splash.h"
 #import "StdManager.h"
 #import "TextEncoding.h"
+#import "Transceiver.h"
+#import "Module.h"
 #import "UserInfo.h"
 #import "UTC.h"
 #import <math.h>
@@ -38,7 +41,385 @@
 #import "NetReceive.h"
 #import "NetSend.h"
 #import <netinet/in.h>
+#import <sys/socket.h>
+#import <sys/types.h>
 #import "audioutils.h"
+
+#define kXMLRPCPort 7362
+
+@interface CMXMLRPCRequest : NSObject <NSXMLParserDelegate> {
+	NSString *methodName ;
+	NSMutableArray *params ;
+}
+
+- (id)initWithData:(NSData*)data ;
+- (NSString*)methodName ;
+- (NSArray*)params ;
+
+@end
+
+@interface CMXMLRPCServer : NSObject {
+	Application *application ;
+	int listenSocket ;
+	Boolean running ;
+}
+
+- (id)initWithApplication:(Application*)app ;
+- (void)start ;
+- (void)stop ;
+
+@end
+
+@implementation CMXMLRPCRequest
+
+static NSString *CMXMLRPCUnescape( NSString *string )
+{
+	NSMutableString *unescaped ;
+
+	if ( string == nil ) return @"" ;
+	unescaped = [ NSMutableString stringWithString:string ] ;
+	[ unescaped replaceOccurrencesOfString:@"&lt;" withString:@"<" options:0 range:NSMakeRange( 0, [ unescaped length ] ) ] ;
+	[ unescaped replaceOccurrencesOfString:@"&gt;" withString:@">" options:0 range:NSMakeRange( 0, [ unescaped length ] ) ] ;
+	[ unescaped replaceOccurrencesOfString:@"&quot;" withString:@"\"" options:0 range:NSMakeRange( 0, [ unescaped length ] ) ] ;
+	[ unescaped replaceOccurrencesOfString:@"&apos;" withString:@"'" options:0 range:NSMakeRange( 0, [ unescaped length ] ) ] ;
+	[ unescaped replaceOccurrencesOfString:@"&amp;" withString:@"&" options:0 range:NSMakeRange( 0, [ unescaped length ] ) ] ;
+	return unescaped ;
+}
+
+static NSString *CMXMLRPCInnerTagValue( NSString *source, NSString *tag )
+{
+	NSString *startTag, *endTag ;
+	NSRange start, end ;
+	NSUInteger location ;
+
+	startTag = [ NSString stringWithFormat:@"<%@>", tag ] ;
+	endTag = [ NSString stringWithFormat:@"</%@>", tag ] ;
+	start = [ source rangeOfString:startTag options:NSCaseInsensitiveSearch ] ;
+	if ( start.location == NSNotFound ) return nil ;
+	location = start.location + start.length ;
+	end = [ source rangeOfString:endTag options:NSCaseInsensitiveSearch range:NSMakeRange( location, [ source length ]-location ) ] ;
+	if ( end.location == NSNotFound ) return nil ;
+	return [ source substringWithRange:NSMakeRange( location, end.location-location ) ] ;
+}
+
+static NSArray *CMXMLRPCParamBlocks( NSString *xml )
+{
+	NSMutableArray *blocks ;
+	NSRange searchRange, start, end ;
+	NSUInteger location ;
+
+	blocks = [ NSMutableArray array ] ;
+	searchRange = NSMakeRange( 0, [ xml length ] ) ;
+	while ( 1 ) {
+		start = [ xml rangeOfString:@"<param>" options:NSCaseInsensitiveSearch range:searchRange ] ;
+		if ( start.location == NSNotFound ) break ;
+		location = start.location + start.length ;
+		end = [ xml rangeOfString:@"</param>" options:NSCaseInsensitiveSearch range:NSMakeRange( location, [ xml length ]-location ) ] ;
+		if ( end.location == NSNotFound ) break ;
+		[ blocks addObject:[ xml substringWithRange:NSMakeRange( location, end.location-location ) ] ] ;
+		location = end.location + end.length ;
+		searchRange = NSMakeRange( location, [ xml length ]-location ) ;
+	}
+	return blocks ;
+}
+
+- (id)initWithData:(NSData*)data
+{
+	NSString *xml, *paramString, *value ;
+	NSArray *blocks ;
+	NSEnumerator *enumerator ;
+	id block ;
+	NSData *decodedData ;
+
+	self = [ super init ] ;
+	if ( self ) {
+		params = [ [ NSMutableArray alloc ] init ] ;
+		xml = [ [ NSString alloc ] initWithData:data encoding:NSUTF8StringEncoding ] ;
+		if ( xml == nil ) xml = [ [ NSString alloc ] initWithData:data encoding:NSISOLatin1StringEncoding ] ;
+		if ( xml ) {
+			value = CMXMLRPCInnerTagValue( xml, @"methodName" ) ;
+			if ( value ) methodName = [ CMXMLRPCUnescape( value ) copy ] ;
+			blocks = CMXMLRPCParamBlocks( xml ) ;
+			enumerator = [ blocks objectEnumerator ] ;
+			while ( ( block = [ enumerator nextObject ] ) != nil ) {
+				paramString = CMXMLRPCInnerTagValue( block, @"string" ) ;
+				if ( paramString ) {
+					[ params addObject:CMXMLRPCUnescape( paramString ) ] ;
+					continue ;
+				}
+				paramString = CMXMLRPCInnerTagValue( block, @"base64" ) ;
+				if ( paramString ) {
+					decodedData = [ [ NSData alloc ] initWithBase64EncodedString:paramString options:0 ] ;
+					if ( decodedData ) [ params addObject:decodedData ] ;
+					[ decodedData release ] ;
+					continue ;
+				}
+				paramString = CMXMLRPCInnerTagValue( block, @"boolean" ) ;
+				if ( paramString ) {
+					[ params addObject:[ NSNumber numberWithBool:( [ paramString intValue ] != 0 ) ] ] ;
+					continue ;
+				}
+				paramString = CMXMLRPCInnerTagValue( block, @"int" ) ;
+				if ( paramString == nil ) paramString = CMXMLRPCInnerTagValue( block, @"i4" ) ;
+				if ( paramString ) {
+					[ params addObject:paramString ] ;
+					continue ;
+				}
+				paramString = CMXMLRPCInnerTagValue( block, @"value" ) ;
+				if ( paramString ) [ params addObject:CMXMLRPCUnescape( paramString ) ] ;
+			}
+			[ xml release ] ;
+		}
+	}
+	return self ;
+}
+
+- (void)dealloc
+{
+	[ methodName release ] ;
+	[ params release ] ;
+	[ super dealloc ] ;
+}
+
+- (NSString*)methodName
+{
+	return methodName ;
+}
+
+- (NSArray*)params
+{
+	return params ;
+}
+
+@end
+
+@implementation CMXMLRPCServer
+
+- (id)initWithApplication:(Application*)app
+{
+	self = [ super init ] ;
+	if ( self ) {
+		application = app ;
+		listenSocket = -1 ;
+		running = NO ;
+	}
+	return self ;
+}
+
+- (NSString*)escape:(NSString*)string
+{
+	NSMutableString *escaped ;
+	
+	if ( string == nil ) return @"" ;
+	escaped = [ NSMutableString stringWithString:string ] ;
+	[ escaped replaceOccurrencesOfString:@"&" withString:@"&amp;" options:0 range:NSMakeRange( 0, [ escaped length ] ) ] ;
+	[ escaped replaceOccurrencesOfString:@"<" withString:@"&lt;" options:0 range:NSMakeRange( 0, [ escaped length ] ) ] ;
+	[ escaped replaceOccurrencesOfString:@">" withString:@"&gt;" options:0 range:NSMakeRange( 0, [ escaped length ] ) ] ;
+	return escaped ;
+}
+
+- (NSString*)xmlValueForObject:(id)object type:(NSString*)type
+{
+	NSString *string ;
+	NSMutableString *xml ;
+	NSEnumerator *enumerator ;
+	id item ;
+
+	if ( type == nil || [ type isEqualToString:@"nil" ] ) return @"<nil/>" ;
+	if ( [ type isEqualToString:@"string" ] ) return [ NSString stringWithFormat:@"<string>%@</string>", [ self escape:object ] ] ;
+	if ( [ type isEqualToString:@"boolean" ] ) return [ NSString stringWithFormat:@"<boolean>%d</boolean>", [ object boolValue ] ? 1 : 0 ] ;
+	if ( [ type isEqualToString:@"base64" ] ) {
+		string = [ object base64EncodedStringWithOptions:0 ] ;
+		return [ NSString stringWithFormat:@"<base64>%@</base64>", string ] ;
+	}
+	if ( [ type isEqualToString:@"array" ] ) {
+		xml = [ NSMutableString stringWithString:@"<array><data>" ] ;
+		enumerator = [ object objectEnumerator ] ;
+		while ( ( item = [ enumerator nextObject ] ) != nil ) {
+			[ xml appendFormat:@"<value><string>%@</string></value>", [ self escape:item ] ] ;
+		}
+		[ xml appendString:@"</data></array>" ] ;
+		return xml ;
+	}
+	return [ NSString stringWithFormat:@"<string>%@</string>", [ self escape:[ object description ] ] ] ;
+}
+
+- (NSData*)httpResponseForBody:(NSString*)body status:(NSString*)status
+{
+	NSString *header ;
+	NSData *bodyData ;
+	NSMutableData *response ;
+
+	bodyData = [ body dataUsingEncoding:NSUTF8StringEncoding ] ;
+	header = [ NSString stringWithFormat:@"HTTP/1.1 %@\r\nContent-Type: text/xml\r\nContent-Length: %lu\r\nConnection: close\r\n\r\n", status, (unsigned long)[ bodyData length ] ] ;
+	response = [ NSMutableData data ] ;
+	[ response appendData:[ header dataUsingEncoding:NSUTF8StringEncoding ] ] ;
+	[ response appendData:bodyData ] ;
+	return response ;
+}
+
+- (NSData*)faultResponse:(int)code string:(NSString*)message
+{
+	NSString *body ;
+	body = [ NSString stringWithFormat:@"<?xml version=\"1.0\"?><methodResponse><fault><value><struct><member><name>faultCode</name><value><int>%d</int></value></member><member><name>faultString</name><value><string>%@</string></value></member></struct></value></fault></methodResponse>", code, [ self escape:message ] ] ;
+	return [ self httpResponseForBody:body status:@"200 OK" ] ;
+}
+
+- (NSData*)invokeMethod:(NSString*)method params:(NSArray*)params
+{
+	NSMutableDictionary *request ;
+	NSString *type, *body ;
+	id result ;
+
+	request = [ NSMutableDictionary dictionary ] ;
+	[ request setObject:( method ) ? method : @"" forKey:@"method" ] ;
+	[ request setObject:( params ) ? params : [ NSArray array ] forKey:@"params" ] ;
+	[ application performSelectorOnMainThread:@selector(handleXMLRPCRequest:) withObject:request waitUntilDone:YES ] ;
+	result = [ request objectForKey:@"result" ] ;
+	type = [ request objectForKey:@"type" ] ;
+	if ( [ type isEqualToString:@"fault" ] ) {
+		return [ self faultResponse:[ [ request objectForKey:@"faultCode" ] intValue ] string:[ request objectForKey:@"faultString" ] ] ;
+	}
+	body = [ NSString stringWithFormat:@"<?xml version=\"1.0\"?><methodResponse><params><param><value>%@</value></param></params></methodResponse>", [ self xmlValueForObject:result type:type ] ] ;
+	return [ self httpResponseForBody:body status:@"200 OK" ] ;
+}
+
+- (NSData*)responseForRequestData:(NSData*)requestData
+{
+	NSString *requestString, *bodyString ;
+	NSRange separator ;
+	CMXMLRPCRequest *request ;
+	NSData *bodyData ;
+	NSData *response ;
+
+	requestString = [ [ NSString alloc ] initWithData:requestData encoding:NSUTF8StringEncoding ] ;
+	if ( requestString == nil ) requestString = [ [ NSString alloc ] initWithData:requestData encoding:NSISOLatin1StringEncoding ] ;
+	if ( requestString == nil ) return [ self faultResponse:-32700 string:@"Malformed HTTP request" ] ;
+	separator = [ requestString rangeOfString:@"\r\n\r\n" ] ;
+	if ( separator.location == NSNotFound ) separator = [ requestString rangeOfString:@"\n\n" ] ;
+	if ( separator.location == NSNotFound ) {
+		[ requestString release ] ;
+		return [ self faultResponse:-32700 string:@"HTTP body not found" ] ;
+	}
+	bodyString = [ requestString substringFromIndex:separator.location+separator.length ] ;
+	bodyData = [ bodyString dataUsingEncoding:NSUTF8StringEncoding ] ;
+	request = [ [ CMXMLRPCRequest alloc ] initWithData:bodyData ] ;
+	if ( [ [ request methodName ] length ] == 0 ) {
+		response = [ self faultResponse:-32600 string:@"Missing methodName" ] ;
+	}
+	else {
+		response = [ self invokeMethod:[ request methodName ] params:[ request params ] ] ;
+	}
+	[ request release ] ;
+	[ requestString release ] ;
+	return response ;
+}
+
+- (NSData*)readRequestFromSocket:(int)fd
+{
+	NSMutableData *request ;
+	char buffer[2048] ;
+	ssize_t count ;
+	NSRange range ;
+	NSString *headers ;
+	NSUInteger contentLength, offset, expectedLength ;
+
+	request = [ NSMutableData data ] ;
+	contentLength = 0 ;
+	offset = 0 ;
+	expectedLength = 0 ;
+	while ( ( count = recv( fd, buffer, sizeof( buffer ), 0 ) ) > 0 ) {
+		[ request appendBytes:buffer length:count ] ;
+		if ( expectedLength == 0 ) {
+			headers = [ [ NSString alloc ] initWithData:request encoding:NSUTF8StringEncoding ] ;
+			if ( headers == nil ) headers = [ [ NSString alloc ] initWithData:request encoding:NSISOLatin1StringEncoding ] ;
+			if ( headers ) {
+				range = [ headers rangeOfString:@"\r\n\r\n" ] ;
+				if ( range.location == NSNotFound ) range = [ headers rangeOfString:@"\n\n" ] ;
+				if ( range.location != NSNotFound ) {
+					offset = range.location + range.length ;
+					NSRange lengthRange = [ headers rangeOfString:@"Content-Length:" options:NSCaseInsensitiveSearch ] ;
+					if ( lengthRange.location != NSNotFound ) {
+						NSUInteger index = lengthRange.location + lengthRange.length ;
+						while ( index < [ headers length ] && [ headers characterAtIndex:index ] == ' ' ) index++ ;
+						contentLength = [ [ headers substringFromIndex:index ] intValue ] ;
+					}
+					expectedLength = offset + contentLength ;
+				}
+				[ headers release ] ;
+			}
+		}
+		if ( expectedLength > 0 && [ request length ] >= expectedLength ) break ;
+	}
+	return request ;
+}
+
+- (void)serverThread:(id)unused
+{
+	NSAutoreleasePool *pool ;
+	struct sockaddr_in address ;
+	int client, on ;
+	socklen_t length ;
+	NSData *requestData, *responseData ;
+
+	pool = [ [ NSAutoreleasePool alloc ] init ] ;
+	listenSocket = socket( AF_INET, SOCK_STREAM, 0 ) ;
+	if ( listenSocket < 0 ) {
+		[ pool release ] ;
+		return ;
+	}
+	on = 1 ;
+	setsockopt( listenSocket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof( on ) ) ;
+	bzero( &address, sizeof( address ) ) ;
+	address.sin_len = sizeof( address ) ;
+	address.sin_family = AF_INET ;
+	address.sin_addr.s_addr = htonl( INADDR_LOOPBACK ) ;
+	address.sin_port = htons( kXMLRPCPort ) ;
+	if ( bind( listenSocket, (struct sockaddr*)&address, sizeof( address ) ) < 0 ) {
+		close( listenSocket ) ;
+		listenSocket = -1 ;
+		[ pool release ] ;
+		return ;
+	}
+	if ( listen( listenSocket, 4 ) < 0 ) {
+		close( listenSocket ) ;
+		listenSocket = -1 ;
+		[ pool release ] ;
+		return ;
+	}
+	while ( running ) {
+		length = sizeof( address ) ;
+		client = accept( listenSocket, (struct sockaddr*)&address, &length ) ;
+		if ( client < 0 ) {
+			if ( running == NO ) break ;
+			continue ;
+		}
+		requestData = [ self readRequestFromSocket:client ] ;
+		responseData = [ self responseForRequestData:requestData ] ;
+		if ( responseData ) send( client, [ responseData bytes ], [ responseData length ], 0 ) ;
+		close( client ) ;
+	}
+	if ( listenSocket >= 0 ) {
+		close( listenSocket ) ;
+		listenSocket = -1 ;
+	}
+	[ pool release ] ;
+}
+
+- (void)start
+{
+	if ( running ) return ;
+	running = YES ;
+	[ NSThread detachNewThreadSelector:@selector(serverThread:) toTarget:self withObject:self ] ;
+}
+
+- (void)stop
+{
+	running = NO ;
+	if ( listenSocket >= 0 ) shutdown( listenSocket, SHUT_RDWR ) ;
+}
+
+@end
 
 
 @implementation Application
@@ -47,6 +428,144 @@
 Boolean gFinishedInitialization = NO ;
 Boolean gSplashShowing = NO ;
 NSThread *mainThread ;
+
+static NSString *CMXMLRPCRawReceiveStream( Modem *modem )
+{
+	NSMutableString *result ;
+	NSString *chunk ;
+	Transceiver *transceiver ;
+	Module *receiver ;
+	int i, count ;
+
+	if ( modem == nil ) return @"" ;
+	result = [ NSMutableString string ] ;
+	count = [ modem selectedTransceiver ] ;
+	if ( count < 1 ) count = 1 ;
+	if ( count > 2 ) count = 2 ;
+	for ( i = 0; i < count; i++ ) {
+		transceiver = ( i == 0 ) ? [ modem transceiver1 ] : [ modem transceiver2 ] ;
+		if ( transceiver == nil ) continue ;
+		receiver = [ transceiver receiver ] ;
+		if ( receiver == nil ) continue ;
+		chunk = [ receiver stream ] ;
+		if ( [ chunk length ] > 0 ) [ result appendString:chunk ] ;
+	}
+	return result ;
+}
+
+static Boolean CMXMLRPCIsReceiveCommand( NSString *text )
+{
+	NSString *trimmed ;
+
+	if ( text == nil ) return NO ;
+	trimmed = [ text stringByTrimmingCharactersInSet:[ NSCharacterSet whitespaceAndNewlineCharacterSet ] ] ;
+	if ( [ trimmed length ] == 0 ) return NO ;
+	if ( [ trimmed isEqualToString:@"^r" ] || [ trimmed isEqualToString:@"^R" ] ) return YES ;
+	if ( [ trimmed length ] == 1 ) {
+		unichar ch = [ trimmed characterAtIndex:0 ] ;
+		if ( ch == 0x12 || ch == 0x05 ) return YES ;
+	}
+	return NO ;
+}
+
+- (void)handleXMLRPCRequest:(NSMutableDictionary*)request
+{
+	NSString *method, *version, *text ;
+	NSArray *params, *methods ;
+	Modem *modem ;
+	NSData *bytes ;
+	id param ;
+
+	method = [ request objectForKey:@"method" ] ;
+	params = [ request objectForKey:@"params" ] ;
+	modem = [ stdManager currentModem ] ;
+	if ( [ method isEqualToString:@"fldigi.name" ] ) {
+		[ request setObject:@"cocoaModem 2.1rc1" forKey:@"result" ] ;
+		[ request setObject:@"string" forKey:@"type" ] ;
+		return ;
+	}
+	if ( [ method isEqualToString:@"fldigi.version" ] ) {
+		version = [ [ NSBundle mainBundle ] objectForInfoDictionaryKey:@"CFBundleVersion" ] ;
+		[ request setObject:( version ) ? version : @"unknown" forKey:@"result" ] ;
+		[ request setObject:@"string" forKey:@"type" ] ;
+		return ;
+	}
+	if ( [ method isEqualToString:@"fldigi.list" ] ) {
+		methods = [ NSArray arrayWithObjects:@"fldigi.list", @"fldigi.name", @"fldigi.version", @"main.abort", @"main.get_trx_state", @"main.get_trx_status", @"main.rx", @"main.tx", @"rx.get_data", @"rxtx.get_data", @"text.add_tx", @"text.add_tx_bytes", nil ] ;
+		[ request setObject:methods forKey:@"result" ] ;
+		[ request setObject:@"array" forKey:@"type" ] ;
+		return ;
+	}
+	if ( modem == nil ) {
+		[ request setObject:@"fault" forKey:@"type" ] ;
+		[ request setObject:[ NSNumber numberWithInt:-32000 ] forKey:@"faultCode" ] ;
+		[ request setObject:@"No active modem" forKey:@"faultString" ] ;
+		return ;
+	}
+	if ( [ method isEqualToString:@"main.tx" ] ) {
+		[ stdManager switchCurrentModemToTransmit:YES ] ;
+		[ request setObject:@"type" forKey:@"type" ] ;
+		[ request setObject:@"nil" forKey:@"type" ] ;
+		return ;
+	}
+	if ( [ method isEqualToString:@"main.rx" ] ) {
+		[ stdManager flushCurrentModem ] ;
+		[ request setObject:@"nil" forKey:@"type" ] ;
+		return ;
+	}
+	if ( [ method isEqualToString:@"main.abort" ] ) {
+		[ stdManager flushCurrentModem ] ;
+		[ request setObject:@"nil" forKey:@"type" ] ;
+		return ;
+	}
+	if ( [ method isEqualToString:@"main.get_trx_state" ] || [ method isEqualToString:@"main.get_trx_status" ] ) {
+		[ request setObject:( [ modem currentTransmitState ] ) ? @"tx" : @"rx" forKey:@"result" ] ;
+		[ request setObject:@"string" forKey:@"type" ] ;
+		return ;
+	}
+	if ( [ method isEqualToString:@"text.add_tx" ] || [ method isEqualToString:@"text.add_tx_bytes" ] ) {
+		text = @"" ;
+		if ( [ params count ] > 0 ) {
+			param = [ params objectAtIndex:0 ] ;
+			if ( [ param isKindOfClass:[ NSData class ] ] ) {
+				text = [ [ NSString alloc ] initWithData:param encoding:kTextEncoding ] ;
+				if ( text == nil ) text = [ [ NSString alloc ] initWithData:param encoding:NSISOLatin1StringEncoding ] ;
+				if ( text == nil ) text = [ [ NSString alloc ] initWithString:@"" ] ;
+				[ text autorelease ] ;
+			}
+			else {
+				text = param ;
+			}
+		}
+		if ( CMXMLRPCIsReceiveCommand( text ) ) {
+			[ modem setStream:[ NSString stringWithFormat:@"%c", 5 /* %[rx] */ ] ] ;
+			[ request setObject:@"nil" forKey:@"type" ] ;
+			return ;
+		}
+		[ modem setStream:text ] ;
+		[ modem externalTransmitTextAppended ] ;
+		[ request setObject:@"nil" forKey:@"type" ] ;
+		return ;
+	}
+	if ( [ method isEqualToString:@"rx.get_data" ] || [ method isEqualToString:@"rxtx.get_data" ] ) {
+		text = CMXMLRPCRawReceiveStream( modem ) ;
+		if ( text == nil ) text = @"" ;
+		bytes = [ text dataUsingEncoding:kTextEncoding allowLossyConversion:YES ] ;
+		[ request setObject:( bytes ) ? bytes : [ NSData data ] forKey:@"result" ] ;
+		[ request setObject:@"base64" forKey:@"type" ] ;
+		return ;
+	}
+	if ( [ method isEqualToString:@"tx.get_data" ] ) {
+		text = CMXMLRPCRawReceiveStream( modem ) ;
+		bytes = [ NSData data ] ;
+		[ request setObject:( bytes ) ? bytes : [ NSData data ] forKey:@"result" ] ;
+		[ request setObject:@"base64" forKey:@"type" ] ;
+		return ;
+	}
+	[ request setObject:@"fault" forKey:@"type" ] ;
+	[ request setObject:[ NSNumber numberWithInt:-32601 ] forKey:@"faultCode" ] ;
+	[ request setObject:[ NSString stringWithFormat:@"Unsupported XML-RPC method %@", method ] forKey:@"faultString" ] ;
+}
 
 - (int)appLevel
 {
@@ -518,6 +1037,9 @@ NSThread *mainThread ;
 	
 	//  AppleScript support
 	appleScript = [ [ AppDelegate alloc ] initFromApplication:self ] ;
+	xmlrpcServer = [ [ CMXMLRPCServer alloc ] initWithApplication:self ] ;
+	[ xmlrpcServer start ] ;
+	if ( [ self mainWindow ] ) [ [ self mainWindow ] setTitle:@"cocoaModem 2.1rc1" ] ;
 	
 	[ [ NSApp delegate ] setIsLite:isLite ] ;
 
@@ -1054,6 +1576,11 @@ NSThread *mainThread ;
 		if ( reply != -1 ) return NSTerminateCancel ;
 	}
 	[ stdManager applicationTerminating ] ;
+	if ( xmlrpcServer ) {
+		[ xmlrpcServer stop ] ;
+		[ xmlrpcServer release ] ;
+		xmlrpcServer = nil ;
+	}
 	
 	// v0.50
 	if ( fskHub ) {

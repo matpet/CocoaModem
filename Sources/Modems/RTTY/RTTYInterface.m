@@ -202,6 +202,8 @@
 	unichar uch ;
 	NSString *string ;
 	NSTextStorage *storage ;
+
+	if ( transmitBufferCheck ) return ;
 	
 	[ transmitView select ] ;
 	//  send any pending storage
@@ -229,6 +231,13 @@
 	//[ transmitViewLock unlock ] ;		v0.64b
 	[ self clearTuningIndicators ] ;
 	transmitBufferCheck = [ NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(checkTransmitBuffer:) userInfo:self repeats:YES ] ;		//  v0.65
+}
+
+- (void)externalTransmitTextAppended
+{
+	if ( transmitState == YES && transmitBufferCheck == nil ) {
+		[ self delayTransmit:nil ] ;
+	}
 }
 
 // v0.65 -- defer transmit cancel until the text view has finished
@@ -353,7 +362,6 @@
 	NSColor *indicatorColor ;
 
 	if ( transmitState == YES ) {
-		[ self ptt:YES ] ;
 		indicatorColor =  [ NSColor redColor ] ;
 		[ [ transmitView window ] makeFirstResponder:transmitView ] ;
 		if ( timeout ) [ timeout invalidate ] ;
@@ -387,7 +395,9 @@
 {
 	FSK *fsk ;
 	int ook, transmitType ;
+	Boolean wasTransmit ;
 	
+	wasTransmit = transmitState ;
 	fsk = [ config fsk ] ;
 	ook = [ self ook:config ] ;
 
@@ -397,6 +407,7 @@
 		if ( fsk == nil ) transmitType = 0 ; else transmitType = ( [ fsk useSelectedPort ] <= 0 ) ? 0 : 1 ;
 	}
 	[ [ a.receiver rttyAuralMonitor ] setTransmitState:state transmitType:transmitType ] ;							//  v0.88b
+	if ( state == YES && wasTransmit == NO ) [ self ptt:YES ] ;
 	transmitState = [ txConfig turnOnTransmission:state button:transmitButton fsk:fsk ook:[ self ook:config ] ] ;	//  v0.85
 	
 	//  v0.65 switch to main thread so the timers can fire from the main run loop
@@ -406,8 +417,11 @@
 - (void)changeTransmitStateTo:(Boolean)state
 {
 	FSK *fsk ;
+	Boolean wasTransmit ;
 	
+	wasTransmit = transmitState ;
 	fsk = [ config fsk ] ;
+	if ( state == YES && wasTransmit == NO ) [ self ptt:YES ] ;
 	
 	transmitState = [ txConfig turnOnTransmission:state button:transmitButton fsk:fsk ook:[ self ook:config ] ] ;	//  v0.85
 	

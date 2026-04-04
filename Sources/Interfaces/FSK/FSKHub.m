@@ -11,6 +11,9 @@
 #import "RouterCommands.h"
 #import "TextEncoding.h"
 #include <IOKit/serial/IOSerialKeys.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <termios.h>
 #include <unistd.h>
 
 
@@ -32,6 +35,12 @@ static char CMFigs[] = {  '*',  '3',  '\n', '-',  ' ', '*', '8', '7',
 #define kRobustThreshold	16
 
 static int stopMask[4] = { /* 1 stop */ 0x0, /* 1.5 stops */ 0x8, /* 2 stops */ 0x4, /* default */ 0x8 } ;
+static int stopBitsCount[4] = { 2, 3, 4, 3 } ;
+
+static int serialFlagForLine( int line )
+{
+	return ( line == kSerialDTRLine ) ? TIOCM_DTR : TIOCM_RTS ;
+}
 
 @implementation FSKHub
 
@@ -83,6 +92,12 @@ static int stopMask[4] = { /* 1 stop */ 0x0, /* 1.5 stops */ 0x8, /* 2 stops */ 
 		usos = YES ;							//  v0.84
 		fskBusy = NO ;
 		currentFd = 0 ;
+		currentPortToken = 0 ;
+		currentSerialLine = kSerialRTSLine ;
+		currentBitPeriod = 1.0/45.45 ;
+		currentStopBits = 1 ;
+		serialInvert = NO ;
+		serialMode = NO ;
 		selectCount = 0 ;
 		shift = kLTRSshift ;
 		closed = running = NO ;
@@ -91,6 +106,7 @@ static int stopMask[4] = { /* 1 stop */ 0x0, /* 1.5 stops */ 0x8, /* 2 stops */ 
 		robust = NO ;							//  v0.88 USOS "compatibility mode"
 		spaceFollowedFIGS = NO ;
 		robustCount = 0 ;
+		serialPortCount = 0 ;
 		
 		modem = nil ;
 		
@@ -141,6 +157,24 @@ static int stopMask[4] = { /* 1 stop */ 0x0, /* 1.5 stops */ 0x8, /* 2 stops */ 
 	return self ;
 }
 
+- (int)serialPortTokenForPath:(NSString*)path line:(int)line name:(NSString*)name
+{
+	int i ;
+
+	if ( path == nil ) return 0 ;
+	for ( i = 0; i < serialPortCount; i++ ) {
+		if ( serialPorts[i].line == line && [ serialPorts[i].path isEqualToString:path ] ) return serialPorts[i].token ;
+	}
+	if ( serialPortCount >= 64 ) return 0 ;
+
+	serialPorts[serialPortCount].token = 0x10000 + serialPortCount ;
+	serialPorts[serialPortCount].line = line ;
+	serialPorts[serialPortCount].path = [ path retain ] ;
+	serialPorts[serialPortCount].name = [ name retain ] ;
+	serialPortCount++ ;
+	return serialPorts[serialPortCount-1].token ;
+}
+
 //  v0.84
 - (void)setUSOS:(Boolean)state
 {
@@ -170,6 +204,10 @@ static int stopMask[4] = { /* 1 stop */ 0x0, /* 1.5 stops */ 0x8, /* 2 stops */ 
 			}
 		}
 		[ NSThread sleepUntilDate:[ NSDate dateWithTimeIntervalSinceNow:0.1 ] ] ;
+	}
+	if ( currentFd > 0 ) {
+		close( currentFd ) ;
+		currentFd = 0 ;
 	}
 }
 
@@ -225,24 +263,53 @@ static int stopMask[4] = { /* 1 stop */ 0x0, /* 1.5 stops */ 0x8, /* 2 stops */ 
 
 //  streams
 
-- (void)sendLTRS
+- (Boolean)setSerialMark:(Boolean)mark
+{
+	int bits, flag ;
+	Boolean asserted ;
+
+	if ( currentFd <= 0 ) return NO ;
+	flag = serialFlagForLine( currentSerialLine ) ;
+	asserted = ( mark ^ serialInvert ) ;
+	if ( ioctl( currentFd, TIOCMGET, &bits ) < 0 ) return NO ;
+	if ( asserted ) bits |= flag ; else bits &= ~flag ;
+	return ( ioctl( currentFd, TIOCMSET, &bits ) >= 0 ) ;
+}
+
+- (void)transmitBaudotCode:(int)code
 {
 	unsigned char buf[2] ;
-	
-	buf[0] = CMLTRSCODE ;
-	[ self setCurrentBaudotCharacter:CMLTRSCODE ] ;		//  v0.88 set character for aural monitor
+	int bit, stopCount ;
+
+	[ self setCurrentBaudotCharacter:code ] ;
+	if ( serialMode ) {
+		[ self setSerialMark:NO ] ;
+		usleep( currentBitPeriod*1000000.0 ) ;
+		for ( bit = 0; bit < 5; bit++ ) {
+			[ self setSerialMark:( ( code >> bit ) & 0x1 ) != 0 ] ;
+			usleep( currentBitPeriod*1000000.0 ) ;
+		}
+		stopCount = stopBitsCount[ currentStopBits & 0x3 ] ;
+		for ( bit = 0; bit < stopCount; bit++ ) {
+			[ self setSerialMark:YES ] ;
+			usleep( currentBitPeriod*500000.0 ) ;
+		}
+		return ;
+	}
+	buf[0] = code ;
 	write( currentFd, buf, 1 ) ;
+}
+
+- (void)sendLTRS
+{
+	[ self transmitBaudotCode:CMLTRSCODE ] ;
 	shift = kLTRSshift ;
 	robustCount = 0 ;
 }
 
 - (void)sendFIGS
 {
-	unsigned char buf[2] ;
-
-	buf[0] = CMFIGSCODE ;
-	[ self setCurrentBaudotCharacter:CMFIGSCODE ] ;		//  v0.88 set character for aural monitor
-	write( currentFd, buf, 1 ) ;
+	[ self transmitBaudotCode:CMFIGSCODE ] ;
 	shift = kFIGSshift ;
 	robustCount = 0 ;
 }
@@ -322,8 +389,7 @@ static int unmap( int d )
 
 	//	send character now
 	buf[0] = bchar & 0x1f ;
-	[ self setCurrentBaudotCharacter:buf[0] ] ;									//  v0.88 feedback to aural monitor
-	write( currentFd, buf, 1 ) ;
+	[ self transmitBaudotCode:buf[0] ] ;
 	robustCount++ ;																//  v0.88 added robust mode to FSK
 	
 	spaceFollowedFIGS = NO ;
@@ -381,6 +447,22 @@ static int unmap( int d )
 	[ pool release ] ;
 }
 
+- (void)serialThread
+{
+	NSAutoreleasePool *pool = [ [ NSAutoreleasePool alloc ] init ] ;
+
+	[NSThread sleepUntilDate:[ NSDate dateWithTimeIntervalSinceNow:0.18 ] ] ;
+	if ( running ) {
+		fskBusy = YES ;
+		[ self setSerialMark:YES ] ;
+	}
+	while ( running && serialMode && currentFd > 0 ) {
+		[ self sendNextBaudotCharacter:0 ] ;
+	}
+	[ self setSerialMark:YES ] ;
+	[ pool release ] ;
+}
+
 //  start is delayed to allow a steady mark tone that is at least a character long after PTT is engaged
 //  This makes sure the first character prints correctly.
 - (void)delayedStart:(NSTimer*)timer
@@ -431,6 +513,32 @@ static int unmap( int d )
 		
 	if ( fskBusy ) [ self stopSampling ] ;
 	
+	currentFd = 0 ;
+	currentPortToken = fd ;
+	serialMode = NO ;
+	if ( fd >= 0x10000 ) {
+		for ( i = 0; i < serialPortCount; i++ ) {
+			if ( serialPorts[i].token == fd ) {
+				currentFd = open( [ serialPorts[i].path UTF8String ], O_WRONLY | O_NOCTTY | O_NDELAY ) ;
+				if ( currentFd < 0 ) return ;
+				fcntl( currentFd, F_SETFL, 0 ) ;
+				currentSerialLine = serialPorts[i].line ;
+				currentBitPeriod = 1.0 / ( ( baudRate < 10.0 ) ? 10.0 : baudRate ) ;
+				currentStopBits = stopIndex ;
+				serialInvert = invertTx ;
+				modem = inModem ;
+				producer = consumer = 0 ;
+				shift = kLTRSshift ;
+				spaceFollowedFIGS = NO ;
+				robustCount = 0 ;
+				serialMode = YES ;
+				running = YES ;
+				[ NSThread detachNewThreadSelector:@selector(serialThread) toTarget:self withObject:nil ] ;
+				return ;
+			}
+		}
+		return ;
+	}
 	currentFd = fd ;
 	if ( fd > 0 ) {
 		for ( i = 0; i < activeKeyers; i++ ) {
@@ -461,6 +569,12 @@ static int unmap( int d )
 {
 	running = fskBusy = NO ;
 	modem = nil ;
+	if ( serialMode && currentFd > 0 ) {
+		[ self setSerialMark:YES ] ;
+		close( currentFd ) ;
+		currentFd = 0 ;
+	}
+	serialMode = NO ;
 }
 
 - (void)clearOutput

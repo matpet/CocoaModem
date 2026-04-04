@@ -17,11 +17,14 @@ See ATTRIBUTION.md for project provenance and attribution notes.
 - Builds as a universal macOS application for Apple Silicon and Intel.
 - Verified to launch and run on macOS 15.7.x.
 - Keeps the existing cocoaModem functionality and structure while updating compatibility issues in the legacy codebase.
+- Adds external FSK keying support for RTTY operation.
+- Adds fldigi-compatible XML-RPC support for RumLogNG contest integration.
 
 ## Notes
 
 - The main Xcode project is in `cocoaModem 2.0/cocoaModem 2.0.xcodeproj`.
 - This repository focuses on compatibility and maintenance updates, not a rewrite of the original application.
+- The original plain RTTY panel is legacy/deprecated in the upstream design; use Wideband RTTY or Dual RTTY for supported RTTY operation.
 
 ## Repository Scope
 
@@ -40,3 +43,4 @@ See ATTRIBUTION.md for project provenance and attribution notes.
 - Original cocoaModem created by W7AY, Kok Chen.
 - Repository updated to restore compatibility with current macOS releases.
 - Current modernization pass includes universal Apple Silicon and Intel builds, Intel launch fixes, and native system appearance behavior on modern macOS.
+- 2.1rc1 adds external RTTY FSK keying and a fldigi-compatible XML-RPC interface for RumLogNG contest control.

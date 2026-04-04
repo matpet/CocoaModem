@@ -187,6 +187,7 @@
 	
 	- (void)enterTransmitMode:(Boolean)state ;
 	- (void)flushAndLeaveTransmit ;
+	- (void)externalTransmitTextAppended ;
 	
 	- (NSTabViewItem*)tabItem ;
 	- (Boolean)isActiveTab ;

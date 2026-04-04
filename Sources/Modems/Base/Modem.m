@@ -400,6 +400,11 @@
 {
 }
 
+//  override in modem implementations that want to react to external text injection
+- (void)externalTransmitTextAppended
+{
+}
+
 //  override in modem implementations
 - (void)transmittedCharacter:(int)ch
 {
