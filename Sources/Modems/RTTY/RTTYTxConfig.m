@@ -457,6 +457,13 @@ static float stopDuration[3] = { 1.0, 1.5, 2.0 } ;
 	return afsk ;
 }
 
+- (Boolean)transmitBufferEmpty
+{
+	if ( fsk ) return YES ;
+	if ( afsk == nil ) return YES ;
+	return ( [ afsk lengthOfActiveStream ] <= 1 ) ;
+}
+
 - (void)stopSampling
 {
 	[ modemDest stopSampling ] ;

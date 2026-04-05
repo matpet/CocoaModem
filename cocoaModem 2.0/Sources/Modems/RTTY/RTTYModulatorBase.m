@@ -259,7 +259,13 @@
 //  append the string, replacing completely any previous string that is in the buffer if clearExistingCharacters is true
 - (void)appendString:(char*)s clearExistingCharacters:(Boolean)reset
 {	
-	if ( reset ) producer = consumer = 0 ;
+	if ( reset ) {
+		consumer = 0 ;
+		producer = 1 ;
+		stream[0] = stopBit ;
+		stream[0].character = 0 ;
+		stream[0].code = 0 ;
+	}
 	while ( *s ) [ self appendASCII:( *s++ ) ] ;
 	
 	bitTheta = 0 ;
@@ -269,7 +275,14 @@
 
 - (void)clearOutput
 {
-	if ( consumer < ( producer-1 ) ) consumer = producer-1 ;
+	consumer = 0 ;
+	producer = 1 ;
+	stream[0] = stopBit ;
+	stream[0].character = 0 ;
+	stream[0].code = 0 ;
+	bitTheta = 0 ;
+	current = ( !ook ) ? tonePair.mark : ookMark ;
+	currentBitDDA = bitDDA ;
 }
 
 //  v0.88 send Baudot character to FSKHub so OOK aural Monitor can fetch it

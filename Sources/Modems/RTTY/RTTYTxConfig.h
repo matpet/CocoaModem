@@ -65,6 +65,7 @@
 	
 	- (Boolean)startFSKTransmit ;
 	- (RTTYModulator*)afskObj ;
+	- (Boolean)transmitBufferEmpty ;
 	- (void)setUSOS:(Boolean)state ;
 	- (void)stopSampling ;
 

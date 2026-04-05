@@ -153,10 +153,14 @@
 			transmitCount-- ;
 			[ transmitCountLock unlock ] ;
 			if ( transmitCount <= 0 ) {
-				[ self changeTransmitStateTo:NO ] ;
 				[ transmitCountLock lock ] ;
 				transmitCount = 0 ;
 				[ transmitCountLock unlock ] ;
+				if ( autoReceiveTimer ) {
+					[ autoReceiveTimer invalidate ] ;
+					autoReceiveTimer = nil ;
+				}
+				[ self changeTransmitStateTo:NO ] ;
 			}
 			//  is also end of macro
 			break ;
@@ -181,6 +185,19 @@
 	}
 }
 
+- (void)checkForAutoReceive:(NSTimer*)timer
+{
+	Boolean empty ;
+
+	empty = [ txConfig transmitBufferEmpty ] ;
+	if ( transmitCount > 0 || !empty ) {
+		return ;
+	}
+	[ autoReceiveTimer invalidate ] ;
+	autoReceiveTimer = nil ;
+	[ self changeTransmitStateTo:NO ] ;
+}
+
 /* local */
 //  this gets periodically called when transmitting
 - (void)timedOut:(NSTimer*)timer
@@ -202,6 +219,12 @@
 	unichar uch ;
 	NSString *string ;
 	NSTextStorage *storage ;
+
+	transmitStartTimer = nil ;
+	if ( autoReceiveTimer ) {
+		[ autoReceiveTimer invalidate ] ;
+		autoReceiveTimer = nil ;
+	}
 	
 	[ transmitView select ] ;
 	//  send any pending storage
@@ -235,6 +258,12 @@
 - (void)delayTransmitCancel:(NSTimer*)timer
 {
 	NSColor *indicatorColor ;
+
+	transmitStopTimer = nil ;
+	if ( autoReceiveTimer ) {
+		[ autoReceiveTimer invalidate ] ;
+		autoReceiveTimer = nil ;
+	}
 	
 	if ( transmitBufferCheck ) [ transmitBufferCheck invalidate ] ;
 	transmitBufferCheck = nil ;
@@ -353,6 +382,13 @@
 	NSColor *indicatorColor ;
 
 	if ( transmitState == YES ) {
+		if ( transmitStopTimer ) {
+			[ transmitStopTimer invalidate ] ;
+			transmitStopTimer = nil ;
+		}
+		if ( transmitStartTimer ) {
+			[ transmitStartTimer invalidate ] ;
+		}
 		[ self ptt:YES ] ;
 		indicatorColor =  [ NSColor redColor ] ;
 		[ [ transmitView window ] makeFirstResponder:transmitView ] ;
@@ -364,16 +400,23 @@
 		if ( b.isAlive ) [ b.receiver enableReceiver:NO ] ;
 		//[ self setSentColor:YES ] ;
 		//  set text color in receive view and turn on transmit (v0.65 delay changed from 0.5 to 0.3 sec)
-		[ NSTimer scheduledTimerWithTimeInterval:0.3 target:self selector:@selector(delayTransmit:) userInfo:self repeats:NO ] ;
+		transmitStartTimer = [ NSTimer scheduledTimerWithTimeInterval:0.3 target:self selector:@selector(delayTransmit:) userInfo:self repeats:NO ] ;
 		[ transmitLight setBackgroundColor:indicatorColor ] ;
 		
 		[ self flushClickBuffer ] ;			//  v0.89
 	}
 	else {
+		if ( transmitStartTimer ) {
+			[ transmitStartTimer invalidate ] ;
+			transmitStartTimer = nil ;
+		}
+		if ( transmitStopTimer ) {
+			[ transmitStopTimer invalidate ] ;
+		}
 		if ( timeout ) [ timeout invalidate ] ;
 		timeout = nil ;
 		//  v0.65  defer transmit cancel
-		[ NSTimer scheduledTimerWithTimeInterval:0.3 target:self selector:@selector(delayTransmitCancel:) userInfo:self repeats:NO ] ;
+		transmitStopTimer = [ NSTimer scheduledTimerWithTimeInterval:0.3 target:self selector:@selector(delayTransmitCancel:) userInfo:self repeats:NO ] ;
 	}
 }
 
@@ -432,6 +475,10 @@
 
 - (void)flushOutput
 {
+	if ( autoReceiveTimer ) {
+		[ autoReceiveTimer invalidate ] ;
+		autoReceiveTimer = nil ;
+	}
 	[ transmitCountLock lock ] ;
 	transmitCount = 0 ;
 	[ transmitCountLock unlock ] ;
@@ -455,6 +502,14 @@
 	[ transmitCountLock unlock ] ;
 }
 
+- (void)transmissionEnded
+{
+	[ transmitView clearAll ] ;
+	indexOfUntransmittedText = 0 ;
+	indexOfUntransmittedText = [ [ transmitView textStorage ] length ] ;
+	[ super transmissionEnded ] ;
+}
+
 //  return the transceiver that is assigned as the active transmitter
 - (RTTYTransceiver*)transmittingTransceiver
 {
@@ -468,11 +523,13 @@
 	state = ( [ transmitButton state ] == NSOnState ) ;
 
 	if ( state == NO ) {
-		//  enter a %[rx] character into the stream
-		[ transmitView insertAtEnd:[ NSString stringWithFormat:@"%c", 5 /*^E*/ ] ] ;
-		[ transmitLight setBackgroundColor:[ NSColor yellowColor ] ] ;
+		[ self flushAndLeaveTransmit ] ;
 	}
 	else {
+		if ( transmitCount <= 0 ) {
+			[ self flushOutput ] ;
+			indexOfUntransmittedText = [ [ transmitView textStorage ] length ] ;
+		}
 		[ self changeTransmitStateTo:state ] ; 
 	}
 }

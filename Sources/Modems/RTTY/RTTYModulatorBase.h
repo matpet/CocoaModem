@@ -21,5 +21,6 @@
 - (void)initSetup ;
 	
 - (void)setOOK:(int)ookState invert:(Boolean)invertState ;			//  v0.85
+- (int)lengthOfActiveStream ;
 
 @end

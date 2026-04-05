@@ -37,6 +37,9 @@
 		//  transmit
 		int transmitChannel ;
 		NSLock *transmitViewLock ;
+		NSTimer *transmitStartTimer ;
+		NSTimer *transmitStopTimer ;
+		NSTimer *autoReceiveTimer ;
 		NSTimer *transmitBufferCheck ;
 		int indexOfUntransmittedText ;
 		//  macros
