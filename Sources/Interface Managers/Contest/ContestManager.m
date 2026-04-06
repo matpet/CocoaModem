@@ -36,9 +36,114 @@
 #import "WPX.h"
 #import "XE RTTY.h"
 #import "SP RTTY.h"
+#import "EA RTTY.h"
+
+static NSString *contestMacroDefaultsPath( void )
+{
+	NSString *path ;
+
+	path = [ @"~/Library/Preferences/w7ay.cocoaModem ContestMacros.plist" stringByExpandingTildeInPath ] ;
+	return path ;
+}
+
+static NSMutableDictionary *contestMacroDefaultsDictionary( void )
+{
+	NSMutableDictionary *dict ;
+
+	dict = [ NSMutableDictionary dictionaryWithContentsOfFile:contestMacroDefaultsPath() ] ;
+	if ( dict == nil ) dict = [ NSMutableDictionary dictionary ] ;
+	return dict ;
+}
+
+static NSString *contestMacroMessageKey( NSString *contestName, int sheet )
+{
+	NSString *modeName[6] = { @"CQ", @"CQ-Option", @"CQ-OptionShift", @"SP", @"SP-Option", @"SP-OptionShift" } ;
+	NSString *name ;
+
+	name = ( contestName && [ contestName length ] > 0 ) ? contestName : @"Generic" ;
+	if ( sheet < 0 ) sheet = 0 ;
+	if ( sheet > 5 ) sheet = 5 ;
+	return [ NSString stringWithFormat:@"Contest Macro Messages %@ %@", name, modeName[sheet] ] ;
+}
+
+static NSString *contestMacroTitleKey( NSString *contestName, int sheet )
+{
+	NSString *modeName[6] = { @"CQ", @"CQ-Option", @"CQ-OptionShift", @"SP", @"SP-Option", @"SP-OptionShift" } ;
+	NSString *name ;
+
+	name = ( contestName && [ contestName length ] > 0 ) ? contestName : @"Generic" ;
+	if ( sheet < 0 ) sheet = 0 ;
+	if ( sheet > 5 ) sheet = 5 ;
+	return [ NSString stringWithFormat:@"Contest Macro Titles %@ %@", name, modeName[sheet] ] ;
+}
 
 
 @implementation ContestManager
+
+- (void)loadContestMacroDefaults:(NSString*)name
+{
+	int i ;
+	NSString *messageKey, *titleKey ;
+	NSMutableDictionary *dict ;
+	NSObject *messageObject, *titleObject ;
+
+	dict = contestMacroDefaultsDictionary() ;
+	for ( i = 0; i < 6; i++ ) {
+		messageKey = contestMacroMessageKey( name, i ) ;
+		titleKey = contestMacroTitleKey( name, i ) ;
+		messageObject = dict[messageKey] ;
+		titleObject = dict[titleKey] ;
+		if ( messageObject == nil ) messageObject = @"" ;
+		if ( titleObject == nil ) titleObject = @"" ;
+		[ contestMacroSheet[i] updateFromMessageObject:messageObject titleObject:titleObject ] ;
+	}
+}
+
+- (void)saveContestMacroDefaults:(NSString*)name
+{
+	int i ;
+	NSMutableDictionary *dict ;
+	NSString *messageKey, *titleKey ;
+	NSObject *messageObject, *titleObject ;
+
+	if ( name == nil || [ name length ] == 0 ) return ;
+	dict = contestMacroDefaultsDictionary() ;
+	for ( i = 0; i < 6; i++ ) {
+		messageKey = contestMacroMessageKey( name, i ) ;
+		titleKey = contestMacroTitleKey( name, i ) ;
+		messageObject = [ contestMacroSheet[i] getMessageObject ] ;
+		titleObject = [ contestMacroSheet[i] getCaptionObject ] ;
+		if ( messageObject ) dict[messageKey] = messageObject ; else [ dict removeObjectForKey:messageKey ] ;
+		if ( titleObject ) dict[titleKey] = titleObject ; else [ dict removeObjectForKey:titleKey ] ;
+	}
+	[ dict writeToFile:contestMacroDefaultsPath() atomically:YES ] ;
+}
+
+- (void)saveContestMacroDefaultsToPreferences
+{
+	NSString *name ;
+
+	name = contestName ;
+	if ( name == nil || [ name length ] == 0 ) name = @"Generic" ;
+	[ self saveContestMacroDefaults:name ] ;
+}
+
+- (void)ensureContestMenuItem:(NSString*)title
+{
+	NSMenuItem *newContestItem, *menuItem ;
+	NSMenu *submenu ;
+
+	newContestItem = [ contestMenu itemWithTitle:@"New..." ] ;
+	if ( newContestItem == nil ) return ;
+	submenu = [ newContestItem submenu ] ;
+	if ( submenu == nil ) return ;
+	if ( [ submenu itemWithTitle:title ] != nil ) return ;
+
+	menuItem = [ [ NSMenuItem alloc ] initWithTitle:title action:@selector(newContest:) keyEquivalent:@"" ] ;
+	[ menuItem setTarget:self ] ;
+	[ submenu addItem:menuItem ] ;
+	[ menuItem release ] ;
+}
 
 - (void)setInterface:(NSControl*)object to:(SEL)selector
 {
@@ -145,6 +250,7 @@
 	[ center addObserver:self selector:@selector(checkCallsign:) name:@"MyCall" object:nil ] ;
 	[ center addObserver:self selector:@selector(checkName:) name:@"MyName" object:nil ] ;
 	[ center addObserver:self selector:@selector(setDirtyBit:) name:@"SetDirty" object:nil ] ;
+	[ self ensureContestMenuItem:@"EA RTTY" ] ;
 	
 	if ( contestLog ) [ contestLog awakeFromManager ] ;
 }
@@ -223,6 +329,10 @@
 		prototypeName = @"RSTExchange" ;
 		return [ SPRTTY alloc ] ;
 	}
+	if ( [ name isEqualToString:@"EA RTTY" ] ) {
+		prototypeName = @"RSTExchange" ;
+		return [ EARTTY alloc ] ;
+	}
 	return nil ;
 }
 
@@ -230,7 +340,10 @@
 - (Contest*)selectContest:(NSString*)newContestName parser:(NSXMLParser*)parser
 {
 	Contest *test ;
+	NSString *previousContestName ;
 	
+	previousContestName = [ contestName retain ] ;
+	if ( previousContestName ) [ self saveContestMacroDefaults:previousContestName ] ;
 	clients = 0 ;
 	if ( contestName ) [ contestName autorelease ] ;		//  v0.96a
 	contestName = [ newContestName retain ] ;
@@ -259,6 +372,8 @@
 		printf( "cannot alloc contest!\n" ) ;
 		test = nil ;
 	}
+	[ self loadContestMacroDefaults:contestName ] ;
+	[ previousContestName release ] ;
 	return test ;
 }
 
@@ -401,6 +516,7 @@
 	MacroSheet *macroSheet ;
 	
 	if ( sheet >= 6 ) return NO ; // some internal error
+	if ( [ NSApp keyWindow ] ) [ [ NSApp keyWindow ] endEditingFor:nil ] ;
 	
 	[ self updateQSOInfo ] ;
 	
@@ -412,6 +528,8 @@
 		[ [ NSNotificationCenter defaultCenter ] postNotificationName:@"SysBeep" object:nil ] ;
 		return NO ;
 	}
+	if ( ![ modem currentTransmitState ] && ![ modem checkIfCanTransmit ] ) return NO ;
+	[ modem sendMessageImmediately ] ;
 	[ modem executeMacro:n macroSheet:macroSheet fromContest:YES ] ;
 	return YES ;
 }
@@ -445,6 +563,7 @@
 
 - (void)retrieveForPlist:(Preferences*)pref
 {
+	if ( contestName ) [ self saveContestMacroDefaults:contestName ] ;
 	if ( contestLog ) [ contestLog retrieveForPlist:pref ] ;
 	if ( cabrilloInfo ) [ cabrilloInfo retrieveForPlist:pref ] ;
 }

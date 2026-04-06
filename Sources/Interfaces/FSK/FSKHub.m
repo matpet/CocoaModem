@@ -37,11 +37,6 @@ static char CMFigs[] = {  '*',  '3',  '\n', '-',  ' ', '*', '8', '7',
 static int stopMask[4] = { /* 1 stop */ 0x0, /* 1.5 stops */ 0x8, /* 2 stops */ 0x4, /* default */ 0x8 } ;
 static int stopBitsCount[4] = { 2, 3, 4, 3 } ;
 
-static int serialFlagForLine( int line )
-{
-	return ( line == kSerialDTRLine ) ? TIOCM_DTR : TIOCM_RTS ;
-}
-
 @implementation FSKHub
 
 //	(Private API)
@@ -94,6 +89,7 @@ static int serialFlagForLine( int line )
 		currentFd = 0 ;
 		currentPortToken = 0 ;
 		currentSerialLine = kSerialRTSLine ;
+		currentSerialPort = nil ;
 		currentBitPeriod = 1.0/45.45 ;
 		currentStopBits = 1 ;
 		serialInvert = NO ;
@@ -157,22 +153,28 @@ static int serialFlagForLine( int line )
 	return self ;
 }
 
+- (void)dealloc
+{
+	int i ;
+
+	[ self closeFSKConnections ] ;
+	for ( i = 0; i < serialPortCount; i++ ) [ serialPorts[i] release ] ;
+	[ super dealloc ] ;
+}
+
 - (int)serialPortTokenForPath:(NSString*)path line:(int)line name:(NSString*)name
 {
 	int i ;
 
 	if ( path == nil ) return 0 ;
 	for ( i = 0; i < serialPortCount; i++ ) {
-		if ( serialPorts[i].line == line && [ serialPorts[i].path isEqualToString:path ] ) return serialPorts[i].token ;
+		if ( [ serialPorts[i] matchesPath:path line:line ] ) return [ serialPorts[i] token ] ;
 	}
 	if ( serialPortCount >= 64 ) return 0 ;
 
-	serialPorts[serialPortCount].token = 0x10000 + serialPortCount ;
-	serialPorts[serialPortCount].line = line ;
-	serialPorts[serialPortCount].path = [ path retain ] ;
-	serialPorts[serialPortCount].name = [ name retain ] ;
+	serialPorts[serialPortCount] = [ [ SerialLineKeyer alloc ] initWithPath:path line:line name:name token:( 0x10000 + serialPortCount ) ] ;
 	serialPortCount++ ;
-	return serialPorts[serialPortCount-1].token ;
+	return [ serialPorts[serialPortCount-1] token ] ;
 }
 
 //  v0.84
@@ -206,9 +208,10 @@ static int serialFlagForLine( int line )
 		[ NSThread sleepUntilDate:[ NSDate dateWithTimeIntervalSinceNow:0.1 ] ] ;
 	}
 	if ( currentFd > 0 ) {
-		close( currentFd ) ;
+		[ currentSerialPort close ] ;
 		currentFd = 0 ;
 	}
+	currentSerialPort = nil ;
 }
 
 - (int)digiKeyerFSKPort
@@ -265,15 +268,8 @@ static int serialFlagForLine( int line )
 
 - (Boolean)setSerialMark:(Boolean)mark
 {
-	int bits, flag ;
-	Boolean asserted ;
-
-	if ( currentFd <= 0 ) return NO ;
-	flag = serialFlagForLine( currentSerialLine ) ;
-	asserted = ( mark ^ serialInvert ) ;
-	if ( ioctl( currentFd, TIOCMGET, &bits ) < 0 ) return NO ;
-	if ( asserted ) bits |= flag ; else bits &= ~flag ;
-	return ( ioctl( currentFd, TIOCMSET, &bits ) >= 0 ) ;
+	if ( currentSerialPort == nil ) return NO ;
+	return [ currentSerialPort setKeyState:mark ] ;
 }
 
 - (void)transmitBaudotCode:(int)code
@@ -516,13 +512,18 @@ static int unmap( int d )
 	currentFd = 0 ;
 	currentPortToken = fd ;
 	serialMode = NO ;
+	currentSerialPort = nil ;
 	if ( fd >= 0x10000 ) {
 		for ( i = 0; i < serialPortCount; i++ ) {
-			if ( serialPorts[i].token == fd ) {
-				currentFd = open( [ serialPorts[i].path UTF8String ], O_WRONLY | O_NOCTTY | O_NDELAY ) ;
-				if ( currentFd < 0 ) return ;
-				fcntl( currentFd, F_SETFL, 0 ) ;
-				currentSerialLine = serialPorts[i].line ;
+			if ( [ serialPorts[i] token ] == fd ) {
+				currentSerialPort = serialPorts[i] ;
+				[ currentSerialPort setInvert:invertTx ] ;
+				if ( ![ currentSerialPort openForWrite ] ) {
+					currentSerialPort = nil ;
+					return ;
+				}
+				currentFd = [ currentSerialPort fileDescriptor ] ;
+				currentSerialLine = [ currentSerialPort line ] ;
 				currentBitPeriod = 1.0 / ( ( baudRate < 10.0 ) ? 10.0 : baudRate ) ;
 				currentStopBits = stopIndex ;
 				serialInvert = invertTx ;
@@ -571,7 +572,7 @@ static int unmap( int d )
 	modem = nil ;
 	if ( serialMode && currentFd > 0 ) {
 		[ self setSerialMark:YES ] ;
-		close( currentFd ) ;
+		if ( currentSerialPort ) [ currentSerialPort close ] ; else close( currentFd ) ;
 		currentFd = 0 ;
 	}
 	serialMode = NO ;

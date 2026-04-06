@@ -125,7 +125,7 @@
 //	v0.85
 - (void)setModulationMode:(int)index
 {
-	ook = ( index != 0 ) ;
+	ook = ( index == 1 || index == 2 ) ;
 	[  (CWModulator*)afsk setModulationMode:index ] ;
 }
 

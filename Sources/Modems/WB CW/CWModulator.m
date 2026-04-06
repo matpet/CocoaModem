@@ -152,6 +152,8 @@
 		[ self setSpeed:speed ] ;
 		[ self initMorse ] ;
 		tick = state = 0 ;
+		emittedKeyState = -1 ;
+		pendingEndOfTransmit = NO ;
 		ringProducer = ringConsumer = 0 ;
 	}
 	return self ;
@@ -180,7 +182,7 @@
 //	v0.85
 - (void)setModulationMode:(int)index
 {
-	ook = ( index != 0 ) ;
+	ook = ( index == 1 || index == 2 ) ;
 	if ( ook ) {
 		[ vco setCarrier:2500.0 ] ;
 	}
@@ -325,12 +327,12 @@
 
 - (Boolean)bufferEmpty
 {
-	return ( ringProducer == ringConsumer && tick <= 0 ) ;
+	return ( ringProducer == ringConsumer && tick <= 0 && pendingEndOfTransmit == NO ) ;
 }
 
 - (int)needData:(float*)outbuf samples:(int)samples
 {
-	int i, p ;
+	int i, p, currentKeyState ;
 	float x, xook, keyedBuf[512] ;
 	
 	//  assume
@@ -350,20 +352,29 @@
 				}
 				else {
 					if ( tick <= 0 ) {
+						if ( pendingEndOfTransmit ) {
+							pendingEndOfTransmit = NO ;
+							ringConsumer = ( ringConsumer+1 )&0xfff ;
+							[ self transmittedCharacter:5 ] ;
+						}
 						//  check if there is more elements in the ring
 						state = 0 ;
 						if ( ringProducer != ringConsumer ) {
 							state = ring[ringConsumer].state ;
 							tick = ring[ringConsumer].duration ;
-							p = ring[ringConsumer].ascii ;
-							if ( p == 5 || p > 10 ) [ self transmittedCharacter:p ] ;		// v0.37 echo ^E to end stream
-							if ( p == 5 ) {
-								// v0.37 skip over the ^E
-								return 1 ;
+							if ( modem && [ modem respondsToSelector:@selector(queueExternalCWKeyState:duration:) ] ) {
+								[ (WBCW*)modem queueExternalCWKeyState:( state != 0 ) duration:tick ] ;
 							}
-							//  moved below "if" v0.48
-							//  fixes macro problem in manual transmit
-							ringConsumer = ( ringConsumer+1 )&0xfff ;					
+							p = ring[ringConsumer].ascii ;
+							if ( p > 10 ) [ self transmittedCharacter:p ] ;		// v0.37 echo printable chars to end stream
+							if ( p == 5 ) {
+								pendingEndOfTransmit = YES ;
+							}
+							else {
+								//  moved below "if" v0.48
+								//  fixes macro problem in manual transmit
+								ringConsumer = ( ringConsumer+1 )&0xfff ;
+							}
 							if ( modem ) [ (WBCW*)modem keepBreakinAlive:tick/11 ] ;		//  each tick is about 0.09 ms
 						}
 					}
@@ -403,8 +414,14 @@
 //  called when flushing
 - (void)clearOutput
 {
+	if ( modem && [ modem respondsToSelector:@selector(clearExternalCWKeyerQueue) ] ) {
+		[ (WBCW*)modem clearExternalCWKeyerQueue ] ;
+	}
 	ringConsumer = ringProducer ;
 	tick = 0 ;
+	state = 0 ;
+	emittedKeyState = -1 ;
+	pendingEndOfTransmit = NO ;
 }
 
 @end

@@ -14,6 +14,31 @@
 #import "PSK.h"
 #import "PTTHub.h"
 
+static void CMModemTrace( NSString *message )
+{
+	NSFileHandle *handle ;
+	NSString *path, *line ;
+	NSData *data ;
+
+	if ( message == nil ) return ;
+	path = @"/tmp/cocoamodem-wbcw-trace.log" ;
+	line = [ NSString stringWithFormat:@"MANAGER %@\n", message ] ;
+	data = [ line dataUsingEncoding:NSUTF8StringEncoding ] ;
+	if ( data == nil ) return ;
+	if ( [ [ NSFileManager defaultManager ] fileExistsAtPath:path ] == NO ) {
+		[ data writeToFile:path atomically:YES ] ;
+		return ;
+	}
+	handle = [ NSFileHandle fileHandleForWritingAtPath:path ] ;
+	if ( handle == nil ) {
+		[ data writeToFile:path atomically:YES ] ;
+		return ;
+	}
+	[ handle seekToEndOfFile ] ;
+	[ handle writeData:data ] ;
+	[ handle closeFile ] ;
+}
+
 
 @implementation ModemManager
 
@@ -294,6 +319,11 @@ Boolean gTestDump = NO ;
 	return application ;
 }
 
+- (Preferences*)preferencesObject
+{
+	return preferences ;
+}
+
 //  return the window (textured or untextured) which is in use
 - (NSWindow*)windowObject
 {
@@ -378,6 +408,10 @@ Boolean gTestDump = NO ;
 {
 	extern Boolean gSplashShowing ;
 	Boolean splashShowing = gSplashShowing ;
+	NSString *ident ;
+
+	ident = ( installed && installed->modem ) ? [ installed->modem ident ] : @"(null)" ;
+	CMModemTrace( [ NSString stringWithFormat:@"updateModemNow enter %@", ident ] ) ;
 	
 	if ( installed->updatedFromPlist == NO ) {
 		//  v0.78c [ selectedModem setVisibleState:NO ] ;
@@ -388,6 +422,7 @@ Boolean gTestDump = NO ;
 			[ waitProgressBar startAnimation:self ] ;
 		}
 		[ installed->modem updateFromPlist:preferences ] ;
+		CMModemTrace( [ NSString stringWithFormat:@"updateModemNow after updateFromPlist %@", ident ] ) ;
 		
 		if ( installed->contest ) [ self updateContestBar:(ContestInterface*)installed->modem ] ;
 		//  turn on active if updateFromPlist has set the active button
@@ -395,6 +430,7 @@ Boolean gTestDump = NO ;
 			[ NSThread sleepUntilDate:[ NSDate dateWithTimeIntervalSinceNow:0.1 ] ] ;
 		}
 		[ installed->modem updateSourceFromConfigInfo ] ;
+		CMModemTrace( [ NSString stringWithFormat:@"updateModemNow after updateSource %@", ident ] ) ;
 		//  set the already-updated-from-Plist flag
 		installed->updatedFromPlist = YES ;
 		if ( splashShowing == NO ) {
@@ -403,6 +439,7 @@ Boolean gTestDump = NO ;
 			//  v0.78c [ selectedModem setVisibleState:YES ] ;
 		}
 	}
+	CMModemTrace( [ NSString stringWithFormat:@"updateModemNow leave %@", ident ] ) ;
 }
 
 //  0.53d --  called when tab changes or when the app starts (to select first modem)
@@ -427,6 +464,7 @@ Boolean gTestDump = NO ;
 		installed++ ;
 	}
 	if ( newModem ) {
+		CMModemTrace( [ NSString stringWithFormat:@"select modem %@", [ newModem ident ] ] ) ;
 	
 		//  v0.53b first check if the plist has already been updated
 		//  if not, update the modem from the plist and also update the active state depeding on what the plist did to the active button

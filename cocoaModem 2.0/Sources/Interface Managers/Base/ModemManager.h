@@ -122,6 +122,7 @@
 	- (void)clearToolTipsInView:(NSView*)view ;
 
 	- (Application*)appObject ;
+	- (Preferences*)preferencesObject ;
 	- (NSWindow*)windowObject ;
 
 	- (Boolean)okToQuit ;

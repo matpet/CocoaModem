@@ -10,6 +10,7 @@
 
 	#include "WFRTTY.h"
 	#include "CoreModemTypes.h"
+	@class SerialLineKeyer ;
 	
 	@interface WBCW : WFRTTY {
 		IBOutlet id monitor ;	
@@ -25,6 +26,11 @@
 		
 		float transmittedBuffer[512] ;
 		float sidetoneGain ;
+		SerialLineKeyer *externalCWKeyer ;
+		NSString *externalCWPath ;
+		Boolean externalCWEnable ;
+		Boolean externalCWInvert ;
+		int externalCWLine ;
 		
 		CMTonePair lockedTonePair[2] ;
 	}
@@ -41,6 +47,9 @@
 	
 	- (void)keepBreakinAlive:(int)duration ;
 	- (void)sendSidetoneBuffer:(float*)buf ;
+	- (void)externalCWKeyStateChanged:(Boolean)state ;
+	- (void)queueExternalCWKeyState:(Boolean)state duration:(int)samples ;
+	- (void)clearExternalCWKeyerQueue ;
 	
 	@end
 

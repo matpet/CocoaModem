@@ -117,9 +117,16 @@
 	//  dont use modal mode so we can show dictionary
 }
 
+- (IBAction)import:(id)sender
+{
+	[ super import:sender ] ;
+	if ( contestManager ) [ contestManager saveContestMacroDefaultsToPreferences ] ;
+}
+
 - (void)performDone
 {
 	[ (ContestInterface*)modem updateContestMacroButtons ] ;
+	if ( contestManager ) [ contestManager saveContestMacroDefaultsToPreferences ] ;
 	[ NSApp endSheet:self ] ;
 	[ self orderOut:controllingWindow ] ;
 }

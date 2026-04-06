@@ -109,6 +109,11 @@
 	repeatActive = NO ;
 }
 
+- (void)selectDefaultRepeatMacro
+{
+	[ macroMenu selectItemWithTag:0 ] ;
+}
+
 - (void)newMacroCalled:(int)inIndex sheet:(int)inSheet manager:(ContestManager*)inManager modem:(ContestInterface*)inModem
 {
 	if ( delayTimer ) [ self cancel ] ;
@@ -129,12 +134,18 @@
 - (Boolean)updateFromPlist:(Preferences*)pref
 {
 	float pause ;
-	int n ;
+	int i, n ;
 	
 	pause = [ pref floatValueForKey:kContestRepeat ] ;
 	[ pauseTime setStringValue:[ NSString stringWithFormat:@"%.1f", pause ] ] ;
 	n = [ pref intValueForKey:kContestRepeatMenu ] ;
-	[ macroMenu selectItemAtIndex:n ] ;
+	for ( i = 0; i < [ macroMenu numberOfItems ]; i++ ) {
+		if ( [ [ macroMenu itemAtIndex:i ] tag ] == n ) {
+			[ macroMenu selectItemAtIndex:i ] ;
+			return YES ;
+		}
+	}
+	[ macroMenu selectItemWithTag:0 ] ;
 	return YES ;
 }
 
@@ -144,7 +155,7 @@
 	
 	pause = [ pauseTime floatValue ] ;
 	[ pref setFloat:pause forKey:kContestRepeat ] ;
-	[ pref setInt:[ macroMenu indexOfSelectedItem ] forKey:kContestRepeatMenu ] ;
+	[ pref setInt:[ [ macroMenu selectedItem ] tag ] forKey:kContestRepeatMenu ] ;
 }
 
 - (Boolean)textInsertedFromRepeat
@@ -173,7 +184,7 @@
 		sh = tag / 100 ;
 		tag = tag % 100 ;
 		if ( sh < 0 || sh > 2 || tag < 0 || tag > 7 ) /* internal error */ return ;
-		sheet = sh + kContestModeCQ ;
+		sheet = sh + [ modem contestModeIndex ] ;
 		index = tag ;
 	}
 	//  This switches on the macro repeats.

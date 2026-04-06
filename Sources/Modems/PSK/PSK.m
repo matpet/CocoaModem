@@ -497,16 +497,26 @@
 	return selectedTransceiver ;
 }
 
+- (PSKReceiver*)selectedPSKReceiver
+{
+	return ( [ self selectedReceiver ] == 0 ) ? rx1 : rx2 ;
+}
+
 //  check if selected receiver is on
 - (Boolean)checkTx
 {
-	int xcvr ;
-	Boolean isEnabled ;
-	
-	xcvr = [ self selectedReceiver ] ;
-	isEnabled = ( ( xcvr == 0 ) ? [ rx1 isEnabled ] : [ rx2 isEnabled ] ) ;
+	return [ self checkIfCanTransmit ] ;
+}
 
-	return isEnabled ;
+- (Boolean)checkIfCanTransmit
+{
+	PSKReceiver *receiver ;
+
+	receiver = [ self selectedPSKReceiver ] ;
+	if ( receiver == nil ) return NO ;
+	if ( [ receiver canTransmit ] ) return YES ;
+	[ self ensureDefaultTransmitFrequency ] ;
+	return [ receiver canTransmit ] ;
 }
 
 - (void)transceiverChanged
@@ -1055,15 +1065,17 @@ static int kState[] = { NSOffState, NSOnState } ;
 - (void)changeTransmitStateTo:(Boolean)state
 {
 	int xcvr, indicatorState ;
+	Boolean wasTransmit ;
 	
 	if ( state == 0 ) {		//  v0.66
 		//  state is changed back to receive state, mark as backspace limit
 		hardLimitForBackspace = indexOfUntransmittedText ;
 	}	
+	wasTransmit = transmitState ;
+	if ( state == YES && wasTransmit == NO ) [ self ptt:YES ] ;
 	transmitState = [ config turnOnTransmission:state button:transmitButton mode:[ self currentPSKMode ] ] ;			// v0.47
 	
 	if ( transmitState == YES ) {
-		[ self ptt:YES ] ;
 		indicatorState =  TxActive ;
 		[ [ transmitView window ] makeFirstResponder:transmitView ] ;
 		if ( timeout ) [ timeout invalidate ] ;
@@ -1075,6 +1087,7 @@ static int kState[] = { NSOffState, NSOnState } ;
 		[ self flushClickBuffer ] ; //  v0.89
 	}
 	else {
+		if ( state == YES && wasTransmit == NO ) [ self ptt:NO ] ;
 		if ( timeout ) [ timeout invalidate ] ;
 		timeout = nil ;
 		if ( transmitBufferCheck ) [ transmitBufferCheck invalidate ] ;
@@ -1104,12 +1117,31 @@ static int kState[] = { NSOffState, NSOnState } ;
 	frequencyDefined = YES ;
 }
 
+- (void)ensureDefaultTransmitFrequency
+{
+	PSKReceiver *receiver ;
+	float tone ;
+
+	receiver = [ self selectedPSKReceiver ] ;
+	if ( receiver == nil ) return ;
+	[ receiver enableReceiver:YES ] ;
+
+	tone = [ receiver txTone ] ;
+	if ( tone < 250 || tone > 4800 ) tone = [ receiver rxTone ] ;
+	if ( tone < 250 || tone > 4800 ) tone = 1000.0 ;
+
+	[ receiver setAndDisplayRxTone:tone ] ;
+	[ receiver setAndDisplayTxTone:tone ] ;
+	frequencyDefined = YES ;
+}
+
 //  this overrides the method in Modem.m that is called from the app
 - (void)enterTransmitMode:(Boolean)state
 {
 	int xcvr ;
 	PSKReceiver *rx ;
 	
+	if ( !frequencyDefined && state == YES ) [ self ensureDefaultTransmitFrequency ] ;
 	if ( !frequencyDefined ) return ;		//  return if the waterfall has not been previously clicked
 	
 	if ( state != transmitState ) {
@@ -1139,10 +1171,10 @@ static int kState[] = { NSOffState, NSOnState } ;
 /* local */
 - (Boolean)canTransmit
 {
-	int xcvr ;
+	PSKReceiver *receiver ;
 
-	xcvr = [ self selectedReceiver ] ;	
-	return ( ( xcvr == 0 ) ? [ rx1 canTransmit ] : [ rx2 canTransmit ] ) ;
+	receiver = [ self selectedPSKReceiver ] ;
+	return ( receiver ) ? [ receiver canTransmit ] : NO ;
 }
 
 - (void)flushOutput
@@ -1182,7 +1214,7 @@ static int kState[] = { NSOffState, NSOnState } ;
 			[ Messages alertWithMessageText:NSLocalizedString( @"Sound Card not active", nil ) informativeText:NSLocalizedString( @"Select Sound Card", nil ) ] ;
 			return ;
 		}
-		if ( ![ self canTransmit ] ) {
+		if ( ![ self checkIfCanTransmit ] ) {
 			//  check if receive frequency has been selected
 			[ transmitButton setState:NSOffState ] ;
 			[ Messages alertWithMessageText:NSLocalizedString( @"Selected PSK Transceiver not on", nil ) informativeText:NSLocalizedString( @"need to set xcvr", nil ) ] ;
@@ -1377,7 +1409,7 @@ static int kState[] = { NSOffState, NSOnState } ;
 		//  cancel transmission if there is a repeating macro
 		if ( contestBar ) [ contestBar cancelIfRepeatingIsActive ] ;								// v0.32
 
-		if ( [ textView respondsToSelector:@selector(getRightMouse) ] && [ (ExchangeView*)textView getRightMouse ]  ) {	// v0.32
+		if ( [ textView respondsToSelector:@selector(getMouseClick) ] && [ (ExchangeView*)textView getMouseClick ]  ) {
 			if ( [ textView lockFocusIfCanDraw ] ) {
 				range = [ self captureCallsign:textView willChangeSelectionFromCharacterRange:oldSelectedCharRange toCharacterRange:newSelectedCharRange ] ;
 				[ textView unlockFocus ] ;

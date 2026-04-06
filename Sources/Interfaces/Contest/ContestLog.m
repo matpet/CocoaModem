@@ -14,6 +14,39 @@
 #import "TextEncoding.h"
 #import "UpperFormatter.h"
 
+static void ApplyContestLogAppearance( NSTableView *tableView )
+{
+	NSArray *columns ;
+	NSTableColumn *column ;
+	NSCell *dataCell ;
+	int i, count ;
+	NSScrollView *scrollView ;
+
+	if ( tableView == nil ) return ;
+	[ tableView setBackgroundColor:[ NSColor textBackgroundColor ] ] ;
+	[ tableView setGridColor:[ NSColor gridColor ] ] ;
+	[ tableView setUsesAlternatingRowBackgroundColors:NO ] ;
+	[ tableView setSelectionHighlightStyle:NSTableViewSelectionHighlightStyleRegular ] ;
+
+	scrollView = [ tableView enclosingScrollView ] ;
+	if ( scrollView ) {
+		[ scrollView setBackgroundColor:[ NSColor textBackgroundColor ] ] ;
+		if ( [ scrollView respondsToSelector:@selector(setDrawsBackground:) ] ) [ scrollView setDrawsBackground:YES ] ;
+	}
+
+	columns = [ tableView tableColumns ] ;
+	count = [ columns count ] ;
+	for ( i = 0; i < count; i++ ) {
+		column = columns[i] ;
+		dataCell = [ column dataCell ] ;
+		if ( dataCell ) {
+			if ( [ dataCell respondsToSelector:@selector(setBackgroundColor:) ] ) [ dataCell setBackgroundColor:[ NSColor textBackgroundColor ] ] ;
+			if ( [ dataCell respondsToSelector:@selector(setTextColor:) ] ) [ dataCell setTextColor:[ NSColor textColor ] ] ;
+		}
+	}
+	[ tableView reloadData ] ;
+}
+
 
 @implementation ContestLog
 
@@ -96,6 +129,7 @@
 		[ column setEditable:NO ] ;
 		[ [ column headerCell ] setStringValue:title ] ;
 	}
+	ApplyContestLogAppearance( tableView ) ;
 }
 
 - (void)displayInfo:(char*)info
@@ -114,6 +148,7 @@
 
 - (void)showWindow
 {
+	ApplyContestLogAppearance( tableView ) ;
 	[ [ tableView window ] orderFront:self ] ;
 }
 
@@ -431,6 +466,16 @@ static void convertToUpper( char *string )
 		break ;
 	}
 	return string ;
+}
+
+- (void)tableView:(NSTableView*)inTableView willDisplayCell:(id)cell forTableColumn:(NSTableColumn*)tableColumn row:(int)row
+{
+	if ( cell == nil ) return ;
+	if ( [ cell respondsToSelector:@selector(setBackgroundColor:) ] ) [ cell setBackgroundColor:[ NSColor textBackgroundColor ] ] ;
+	if ( [ cell respondsToSelector:@selector(setDrawsBackground:) ] ) [ cell setDrawsBackground:YES ] ;
+	if ( [ cell respondsToSelector:@selector(setTextColor:) ] ) {
+		[ cell setTextColor:( [ inTableView isRowSelected:row ] ) ? [ NSColor selectedTextColor ] : [ NSColor textColor ] ] ;
+	}
 }
 
 //  value set from ContestLog (NSTableDataSource)

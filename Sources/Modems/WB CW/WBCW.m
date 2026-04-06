@@ -21,6 +21,7 @@
 #import "CWTxConfig.h"
 #import "CWWaterfall.h"
 #import "ExchangeView.h"
+#import "FSKHub.h"
 #import "Messages.h"
 #import "ModemManager.h"
 #import "ModemSource.h"
@@ -32,9 +33,116 @@
 #import "RTTYTxConfig.h"
 #import "Spectrum.h"
 #import "StdManager.h"
+#import "SerialLineKeyer.h"
 #import "Transceiver.h"
 
+#define kWBCWJ2ATag 0
+#define kWBCWOOKTag 1
+#define kWBCWDigiKeyerOOKTag 2
+#define kWBCWExternalCWTagBase 1000
+
 @implementation WBCW
+
+- (void)applyExternalCWConfiguration
+{
+	if ( externalCWKeyer ) {
+		[ externalCWKeyer setKeyState:NO ] ;
+		[ externalCWKeyer close ] ;
+		[ externalCWKeyer release ] ;
+		externalCWKeyer = nil ;
+	}
+	if ( externalCWEnable && externalCWPath ) {
+		externalCWKeyer = [ [ SerialLineKeyer alloc ] initWithPath:externalCWPath line:externalCWLine name:@"External CW" token:0 ] ;
+		[ externalCWKeyer setInvert:externalCWInvert ] ;
+		if ( ![ externalCWKeyer openForWrite ] ) {
+			[ externalCWKeyer release ] ;
+			externalCWKeyer = nil ;
+		}
+	}
+}
+
+- (NSDictionary*)externalCWInfoForMenuItem:(NSMenuItem*)item
+{
+	id object ;
+
+	if ( item == nil ) return nil ;
+	object = [ item representedObject ] ;
+	return ( [ object isKindOfClass:[ NSDictionary class ] ] ) ? object : nil ;
+}
+
+- (void)populateModulationMenu
+{
+	NSString *path[32], *stream[32], *title ;
+	NSDictionary *info ;
+	NSMenuItem *item ;
+	int i, count, menuTag ;
+
+	if ( modulationMenu == nil ) return ;
+	[ modulationMenu removeAllItems ] ;
+	[ modulationMenu addItemWithTitle:@"J2A" ] ;
+	[ [ modulationMenu lastItem ] setTag:kWBCWJ2ATag ] ;
+	[ modulationMenu addItemWithTitle:@"OOK" ] ;
+	[ [ modulationMenu lastItem ] setTag:kWBCWOOKTag ] ;
+	[ modulationMenu addItemWithTitle:@"DigiKeyer OOK" ] ;
+	[ [ modulationMenu lastItem ] setTag:kWBCWDigiKeyerOOKTag ] ;
+
+	count = [ SerialLineKeyer findSerialPorts:&path[0] stream:&stream[0] maxPorts:32 ] ;
+	if ( count > 0 ) {
+		[ [ modulationMenu menu ] addItem:[ NSMenuItem separatorItem ] ] ;
+		for ( i = 0; i < count; i++ ) {
+			menuTag = kWBCWExternalCWTagBase + i*2 ;
+			title = [ NSString stringWithFormat:@"A1A (%@ RTS)", stream[i] ] ;
+			[ modulationMenu addItemWithTitle:title ] ;
+			item = [ modulationMenu lastItem ] ;
+			[ item setTag:menuTag ] ;
+			info = [ NSDictionary dictionaryWithObjectsAndKeys:path[i], @"path", [ NSNumber numberWithInt:kSerialRTSLine ], @"line", nil ] ;
+			[ item setRepresentedObject:info ] ;
+
+			title = [ NSString stringWithFormat:@"A1A (%@ DTR)", stream[i] ] ;
+			[ modulationMenu addItemWithTitle:title ] ;
+			item = [ modulationMenu lastItem ] ;
+			[ item setTag:menuTag+1 ] ;
+			info = [ NSDictionary dictionaryWithObjectsAndKeys:path[i], @"path", [ NSNumber numberWithInt:kSerialDTRLine ], @"line", nil ] ;
+			[ item setRepresentedObject:info ] ;
+
+			[ stream[i] release ] ;
+			[ path[i] release ] ;
+		}
+	}
+}
+
+- (void)configureExternalCWKeyer:(Preferences*)pref
+{
+	NSString *path ;
+	NSMenuItem *item ;
+	NSDictionary *info ;
+	int i ;
+
+	externalCWEnable = ( [ pref intValueForKey:kWBCWExtCWEnable ] != 0 ) ;
+	externalCWInvert = ( [ pref intValueForKey:kWBCWExtCWInvert ] != 0 ) ;
+	externalCWLine = [ pref intValueForKey:kWBCWExtCWLine ] ;
+	if ( externalCWLine != kSerialDTRLine ) externalCWLine = kSerialRTSLine ;
+
+	path = [ pref stringValueForKey:kWBCWExtCWDevice ] ;
+	[ externalCWPath release ] ;
+	externalCWPath = ( path && [ path length ] > 0 ) ? [ path retain ] : nil ;
+	[ self applyExternalCWConfiguration ] ;
+
+	if ( modulationMenu ) {
+		if ( externalCWEnable && externalCWPath ) {
+			for ( i = 0; i < [ modulationMenu numberOfItems ]; i++ ) {
+				item = [ modulationMenu itemAtIndex:i ] ;
+				info = [ self externalCWInfoForMenuItem:item ] ;
+				if ( info && [ externalCWPath isEqualToString:[ info objectForKey:@"path" ] ] && externalCWLine == [ [ info objectForKey:@"line" ] intValue ] ) {
+					[ modulationMenu selectItem:item ] ;
+					return ;
+				}
+			}
+		}
+		[ modulationMenu selectItemWithTag:[ pref intValueForKey:kWBCWModulation ] ] ;
+		if ( [ modulationMenu selectedItem ] == nil ) [ modulationMenu selectItemWithTag:kWBCWJ2ATag ] ;
+	}
+}
 
 //  WBCW : WFRTTY : ContestInterface : MacroPanel : Modem : NSObject
 
@@ -108,6 +216,11 @@
 		
 		//  break-in keying support
 		isBreakin = NO ;
+		externalCWKeyer = nil ;
+		externalCWPath = nil ;
+		externalCWEnable = NO ;
+		externalCWInvert = NO ;
+		externalCWLine = kSerialRTSLine ;
 		breakinTimer = nil ;
 		breakinTimeout = 0 ;
 		breakinRelease = 500 ;
@@ -183,6 +296,7 @@
 	[ self awakeFromContest ] ;
 	//  use QSO transmitview
 	[ contestTab selectTabViewItemAtIndex:0 ] ;
+	[ self populateModulationMenu ] ;
 		
 	[ self initCallsign ] ;
 	[ self initColors ] ;
@@ -374,11 +488,34 @@
 //  Application sends this through the ModemManager when quitting
 - (void)applicationTerminating
 {
+	if ( externalCWKeyer ) {
+		[ externalCWKeyer clearQueuedKeyStates ] ;
+		[ externalCWKeyer close ] ;
+	}
 	//[ monitor setMute:YES ] ;
 	[ (CWMonitor*)monitor terminate ] ;
 	[ configA applicationTerminating ] ;			//  v0.78 was calling super which dereferenced non-existent (common) config variable instead of configA and configB
 	[ configB applicationTerminating ] ;			//  v0.78
 	[ ptt applicationTerminating ] ;				//  v0.89
+}
+
+- (void)externalCWKeyStateChanged:(Boolean)state
+{
+	if ( externalCWKeyer ) [ externalCWKeyer setKeyState:state ] ;
+}
+
+- (void)queueExternalCWKeyState:(Boolean)state duration:(int)samples
+{
+	int microseconds ;
+
+	if ( externalCWKeyer == nil ) return ;
+	microseconds = ( samples <= 0 ) ? 0 : (int)( ( samples*1000000.0 )/CMFs ) ;
+	[ externalCWKeyer queueKeyState:state microseconds:microseconds ] ;
+}
+
+- (void)clearExternalCWKeyerQueue
+{
+	if ( externalCWKeyer ) [ externalCWKeyer clearQueuedKeyStates ] ;
 }
 
 - (void)startBreakinTimer
@@ -500,14 +637,12 @@
 		[ super setTextColor:inTextColor sentColor:sentTColor backgroundColor:bgColor plotColor:pColor ] ;
 		[ a.view setBackgroundColor:bgColor ] ;
 		[ a.view setTextColor:inTextColor attribute:[ a.control textAttribute ] ] ;
-		[ a.control setBackgroundColor:bgColor ] ;
 		[ a.control setPlotColor:pColor ] ;
 		if ( waterfall[0] ) [ waterfall[0] setWaterfallColorsWithBackground:bgColor plot:pColor ] ;
 	}
 	else {
 		[ b.view setBackgroundColor:bgColor ] ;
 		[ b.view setTextColor:inTextColor attribute:[ b.control textAttribute ] ] ;
-		[ b.control setBackgroundColor:bgColor ] ;
 		[ b.control setPlotColor:pColor ] ;
 		if ( waterfall[1] ) [ waterfall[1] setWaterfallColorsWithBackground:bgColor plot:pColor ] ;
 	}
@@ -523,8 +658,6 @@
 	[ a.view setTextColor:textColor attribute:[ a.control textAttribute ] ] ;
 	[ b.view setTextColor:textColor attribute:[ b.control textAttribute ] ] ;
 
-	[ a.control setBackgroundColor:bgColor ] ;
-	[ b.control setBackgroundColor:bgColor ] ;
 	[ a.control setPlotColor:plotColor ] ;
 	[ b.control setPlotColor:plotColor ] ;
 	if ( waterfall[0] ) [ waterfall[0] setWaterfallColorsWithBackground:bgColor plot:pColor ] ;
@@ -592,7 +725,7 @@
 	int tag ;
 	
 	tag = [ [ modulationMenu selectedItem ] tag ] ;
-	return ( tag != 0 ) ;
+	return ( tag == 1 || tag == 2 ) ;
 }
 
 	
@@ -605,9 +738,25 @@
 //  v0.85
 - (void)modulationChanged
 {
+	NSDictionary *info ;
+	NSString *path ;
 	int tag ;
 	
 	tag = [ [ modulationMenu selectedItem ] tag ] ;
+	info = [ self externalCWInfoForMenuItem:[ modulationMenu selectedItem ] ] ;
+	externalCWEnable = ( info != nil ) ;
+	if ( info ) {
+		path = [ info objectForKey:@"path" ] ;
+		[ externalCWPath release ] ;
+		externalCWPath = [ path retain ] ;
+		externalCWLine = [ [ info objectForKey:@"line" ] intValue ] ;
+	}
+	else {
+		[ externalCWPath release ] ;
+		externalCWPath = nil ;
+		externalCWLine = kSerialRTSLine ;
+	}
+	[ self applyExternalCWConfiguration ] ;
 	[ (CWTxConfig*)txConfig setModulationMode:tag ] ;
 	[ self switchCWModemIn:tag ] ;
 }
@@ -703,6 +852,10 @@
 	[ pref setRed:0.0 green:0.8 blue:1.0 forKey:kWBCWSubSentColor ] ;
 	[ pref setRed:0.0 green:0.0 blue:0.0 forKey:kWBCWSubBackgroundColor ] ;
 	[ pref setRed:0.0 green:1.0 blue:0.0 forKey:kWBCWSubPlotColor ] ;
+	[ pref setInt:0 forKey:kWBCWExtCWEnable ] ;
+	[ pref setString:@"" forKey:kWBCWExtCWDevice ] ;
+	[ pref setInt:kSerialRTSLine forKey:kWBCWExtCWLine ] ;
+	[ pref setInt:0 forKey:kWBCWExtCWInvert ] ;
 	
 	[ configA setupDefaultPreferences:pref rttyRxControl:a.control ] ;
 	[ configB setupDefaultPreferences:pref rttyRxControl:b.control ] ;
@@ -721,6 +874,7 @@
 	float fontSize ;
 	int waterfallRangeValue ;
 	int txChannel, i ;
+	int monitorActive ;
 	
 	[ super updateFromPlistFromSuper:pref ] ;
 	
@@ -766,7 +920,7 @@
 
 	//  v0.85
 
-	[ modulationMenu selectItemAtIndex:[ pref intValueForKey:kWBCWModulation ] ] ;
+	[ self configureExternalCWKeyer:pref ] ;
 	[ self modulationChanged ] ;
 	
 	[ sidetoneSlider setFloatValue:[  pref floatValueForKey:kWBCWTxSidetoneLevel ] ] ;
@@ -781,13 +935,21 @@
 	[ releaseField setIntValue:[ pref intValueForKey:kWBCWPTTRelease ] ] ;
 	[ self breakinParamsChanged ] ;
 	
-	[ manager showSplash:@"Updating WBCW configurations" ] ;
+	[ manager showSplash:@"WBCW init: config A" ] ;
 	[ configA updateFromPlist:pref rttyRxControl:a.control ] ;
+	[ manager showSplash:@"WBCW init: config B" ] ;
 	[ configB updateFromPlist:pref rttyRxControl:b.control ] ;
 	//  check slashed zero key
 	[ self useSlashedZero:[ pref intValueForKey:kSlashZeros ] ] ;
 	
-	if ( monitor ) [ (CWMonitor*)monitor updateFromPlist:pref ] ;
+	if ( monitor ) {
+		[ manager showSplash:@"WBCW init: monitor" ] ;
+		monitorActive = [ pref intValueForKey:kWBCWMonitorActive ] ;
+		[pref setInt:0 forKey:kWBCWMonitorActive ] ;
+		[ (CWMonitor*)monitor updateFromPlist:pref ] ;
+		[pref setInt:monitorActive forKey:kWBCWMonitorActive ] ;
+	}
+	[ manager showSplash:@"WBCW init: macros" ] ;
 	for ( i = 0; i < 3; i++ ) {
 		if ( macroSheet[i] ) {
 			[ (CWMacros*)( macroSheet[i] ) updateFromPlist:pref option:i ] ;
@@ -829,8 +991,12 @@
 	[ pref setInt:[ [ speedMenu selectedItem ] tag ] forKey:kWBCWSpeed ] ;
 	[ pref setInt:[ leadinField intValue ] forKey:kWBCWPTTLeadIn ] ;
 	[ pref setInt:[ releaseField intValue ] forKey:kWBCWPTTRelease ] ;
+	[ pref setInt:( externalCWEnable ) ? 1 : 0 forKey:kWBCWExtCWEnable ] ;
+	[ pref setString:( externalCWPath ) ? externalCWPath : @"" forKey:kWBCWExtCWDevice ] ;
+	[ pref setInt:externalCWLine forKey:kWBCWExtCWLine ] ;
+	[ pref setInt:( externalCWInvert ) ? 1 : 0 forKey:kWBCWExtCWInvert ] ;
 
-	[ pref setInt:[ modulationMenu indexOfSelectedItem ] forKey:kWBCWModulation ] ;		//  v0.85
+	if ( externalCWEnable ) [ pref setInt:kWBCWJ2ATag forKey:kWBCWModulation ] ; else [ pref setInt:[ [ modulationMenu selectedItem ] tag ] forKey:kWBCWModulation ] ;		//  v0.85
 	
 	[ pref setFloat:[ sidetoneSlider floatValue ] forKey:kWBCWTxSidetoneLevel ] ;
 	

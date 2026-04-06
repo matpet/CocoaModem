@@ -40,6 +40,7 @@
 		
 		int selectedField ;
 		NSTextField *currentField ;  // the most recent field set from contest panel
+		NSTimer *pendingFieldTimer ;
 	}
 	
 	- (IBAction)showContestMacroSheet:(id)sender ;

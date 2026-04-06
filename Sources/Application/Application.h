@@ -46,6 +46,8 @@
 
 		IBOutlet id voiceAssistMenuItem ;					//  v1.01b
 		IBOutlet id directFrequencyAccessField ;			//  v1.02b
+		NSMenuItem *darkModeMenuItem ;
+		Boolean appDarkMode ;
 		
 		ModemSleepManager *sleepManager ;
 		
@@ -142,6 +144,7 @@
 	- (IBAction)selectQSOCall:(id)sender ;		//  v1.01a
 	- (IBAction)selectQSOName:(id)sender ;		//  v1.01a
 	- (IBAction)toggleVoiceAssist:(id)sender ;	//  v1.01b
+	- (IBAction)toggleDarkMode:(id)sender ;
 	
 	//  v0.78	aural monitor and AudioManager
 	- (AuralMonitor*)auralMonitor ;

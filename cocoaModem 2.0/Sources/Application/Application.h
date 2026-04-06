@@ -161,6 +161,7 @@
 	- (const char*)localHostIP ;
 
 	- (StdManager*)stdManagerObject ;
+	- (Config*)configObject ;
 	- (DigitalInterfaces*)digitalInterfaces ;			//  v0.89
 	- (FSKHub*)fskHub ;
 	

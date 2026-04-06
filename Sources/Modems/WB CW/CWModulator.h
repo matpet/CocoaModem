@@ -39,6 +39,8 @@
 		int ringProducer ;
 		int ringConsumer ;
 		MorseElementType ring[4096] ;
+		int emittedKeyState ;
+		Boolean pendingEndOfTransmit ;
 		
 		int transmitHoldoff ;
 		

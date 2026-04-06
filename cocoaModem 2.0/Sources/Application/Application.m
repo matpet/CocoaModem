@@ -365,6 +365,10 @@ NSThread *mainThread ;
 	NSString *path ;
 	const char *str ;
 	int i ;
+
+	if ( [ NSApp respondsToSelector:@selector(setAppearance:) ] ) {
+		[ NSApp setAppearance:[ NSAppearance appearanceNamed:NSAppearanceNameAqua ] ] ;
+	}
 	
 	//	v1.01b
 	voiceAssist = NO ;
@@ -597,6 +601,11 @@ NSThread *mainThread ;
 - (StdManager*)stdManagerObject
 {
 	return stdManager ;
+}
+
+- (Config*)configObject
+{
+	return config ;
 }
 
 - (UserInfo*)userInfoObject

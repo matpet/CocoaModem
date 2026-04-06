@@ -1049,6 +1049,15 @@
 												<reference key="NSOnImage" ref="621448899"/>
 												<reference key="NSMixedImage" ref="431946666"/>
 											</object>
+											<object class="NSMenuItem" id="841234567">
+												<reference key="NSMenu" ref="650556351"/>
+												<string key="NSTitle">EA RTTY</string>
+												<string key="NSKeyEquiv"/>
+												<int key="NSKeyEquivModMask">1048576</int>
+												<int key="NSMnemonicLoc">2147483647</int>
+												<reference key="NSOnImage" ref="621448899"/>
+												<reference key="NSMixedImage" ref="431946666"/>
+											</object>
 											<object class="NSMenuItem" id="10133846">
 												<reference key="NSMenu" ref="650556351"/>
 												<bool key="NSIsDisabled">YES</bool>
@@ -1707,12 +1716,11 @@
 								<reference key="NSControlView" ref="357199469"/>
 								<reference key="NSBackgroundColor" ref="625920702"/>
 								<object class="NSColor" key="NSTextColor" id="358637392">
-									<int key="NSColorSpace">6</int>
-									<string key="NSCatalogName">System</string>
-									<string key="NSColorName">controlTextColor</string>
+									<int key="NSColorSpace">1</int>
+									<bytes key="NSRGB">MCAwIDAAA</bytes>
 									<object class="NSColor" key="NSColor" id="394090439">
-										<int key="NSColorSpace">3</int>
-										<bytes key="NSWhite">MAA</bytes>
+										<int key="NSColorSpace">1</int>
+										<bytes key="NSRGB">MCAwIDAAA</bytes>
 									</object>
 								</object>
 							</object>
@@ -1738,8 +1746,8 @@
 									<string key="NSCatalogName">System</string>
 									<string key="NSColorName">textBackgroundColor</string>
 									<object class="NSColor" key="NSColor" id="765541074">
-										<int key="NSColorSpace">3</int>
-										<bytes key="NSWhite">MQA</bytes>
+										<int key="NSColorSpace">1</int>
+										<bytes key="NSRGB">MSAxIDEAA</bytes>
 									</object>
 								</object>
 								<object class="NSColor" key="NSTextColor">
@@ -2987,6 +2995,14 @@
 						<reference key="destination" ref="859173754"/>
 					</object>
 					<int key="connectionID">1346</int>
+				</object>
+				<object class="IBConnectionRecord">
+					<object class="IBActionConnection" key="connection">
+						<string key="label">newContest:</string>
+						<reference key="source" ref="410085405"/>
+						<reference key="destination" ref="841234567"/>
+					</object>
+					<int key="connectionID">5001</int>
 				</object>
 				<object class="IBConnectionRecord">
 					<object class="IBActionConnection" key="connection">

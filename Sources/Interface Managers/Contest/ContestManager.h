@@ -118,6 +118,7 @@
 	
 	- (void)showContestMacroSheet:(int)n ;
 	- (NSMatrix*)macroTitles:(int)sheet ;
+	- (void)saveContestMacroDefaultsToPreferences ;
 	- (Boolean)executeContestMacro:(int)n sheet:(int)sheet modem:(ContestInterface*)modem ;
 	- (Boolean)executeContestMacroFromShortcut:(int)n sheet:(int)sheet modem:(ContestInterface*)modem ;
 	- (NSString*)expandMacroInUserAndQSOInfo:(const char*)macro ;

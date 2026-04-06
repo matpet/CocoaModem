@@ -8,7 +8,169 @@
 
 #import "MacroMenu.h"
 
+static void setAppAppearance( id object )
+{
+    NSAppearance *appearance ;
+
+    appearance = [ NSApp appearance ] ;
+    if ( object && appearance && [ object respondsToSelector:@selector(setAppearance:) ] ) {
+        [ object setAppearance:appearance ] ;
+	}
+}
+
+static NSColor *macroDictionaryBackgroundColor( void )
+{
+    return [ NSColor textBackgroundColor ] ;
+}
+
+static NSColor *macroDictionaryTextColor( void )
+{
+    return [ NSColor textColor ] ;
+}
+
+static NSColor *macroDictionarySelectedTextColor( void )
+{
+    if ( [ NSColor respondsToSelector:@selector(selectedTextColor) ] ) return [ NSColor selectedTextColor ] ;
+    return [ NSColor textColor ] ;
+}
+
+static void ApplyReadableColorsToMacroDictionaryView( NSView *view )
+{
+    NSArray *subviews ;
+    int i, rows, columns ;
+
+    setAppAppearance( view ) ;
+    if ( [ view isKindOfClass:[ NSScrollView class ] ] ) {
+        NSScrollView *scrollView = (NSScrollView*)view ;
+        [ scrollView setDrawsBackground:YES ] ;
+        [ scrollView setBackgroundColor:macroDictionaryBackgroundColor() ] ;
+        if ( [ scrollView documentView ] ) ApplyReadableColorsToMacroDictionaryView( [ scrollView documentView ] ) ;
+    }
+    if ( [ view isKindOfClass:[ NSOutlineView class ] ] ) {
+        NSOutlineView *outlineView = (NSOutlineView*)view ;
+        NSArray *tableColumns = [ outlineView tableColumns ] ;
+        [ outlineView setBackgroundColor:macroDictionaryBackgroundColor() ] ;
+        if ( [ outlineView respondsToSelector:@selector(setUsesAlternatingRowBackgroundColors:) ] ) [ outlineView setUsesAlternatingRowBackgroundColors:NO ] ;
+        for ( i = 0; i < [ tableColumns count ]; i++ ) {
+            NSTableColumn *column = [ tableColumns objectAtIndex:i ] ;
+            id cell = [ column dataCell ] ;
+            if ( [ cell respondsToSelector:@selector(setTextColor:) ] ) [ cell setTextColor:macroDictionaryTextColor() ] ;
+            if ( [ cell respondsToSelector:@selector(setBackgroundColor:) ] ) [ cell setBackgroundColor:macroDictionaryBackgroundColor() ] ;
+        }
+    }
+    if ( [ view isKindOfClass:[ NSTextField class ] ] ) {
+        NSTextField *field = (NSTextField*)view ;
+		if ( [ field respondsToSelector:@selector(setDrawsBackground:) ] ) [ field setDrawsBackground:YES ] ;
+        if ( [ field respondsToSelector:@selector(setTextColor:) ] ) [ field setTextColor:macroDictionaryTextColor() ] ;
+        if ( [ field respondsToSelector:@selector(setBackgroundColor:) ] ) [ field setBackgroundColor:macroDictionaryBackgroundColor() ] ;
+    }
+    if ( [ view isKindOfClass:[ NSMatrix class ] ] ) {
+        NSMatrix *matrix = (NSMatrix*)view ;
+        rows = [ matrix numberOfRows ] ;
+        columns = [ matrix numberOfColumns ] ;
+        for ( i = 0; i < rows*columns; i++ ) {
+            NSCell *cell = [ matrix cellAtRow:( i/columns ) column:( i%columns ) ] ;
+            if ( [ cell respondsToSelector:@selector(setTextColor:) ] ) [ (id)cell setTextColor:macroDictionaryTextColor() ] ;
+        }
+    }
+    subviews = [ view subviews ] ;
+    for ( i = 0; i < [ subviews count ]; i++ ) ApplyReadableColorsToMacroDictionaryView( [ subviews objectAtIndex:i ] ) ;
+}
+
+static NSOutlineView *FindMacroDictionaryOutlineView( NSView *view )
+{
+    NSArray *subviews ;
+    int i ;
+
+    if ( [ view isKindOfClass:[ NSOutlineView class ] ] ) {
+        NSArray *tableColumns = [ (NSOutlineView*)view tableColumns ] ;
+        int index ;
+        Boolean hasFunctionColumn ;
+
+        hasFunctionColumn = NO ;
+        for ( index = 0; index < [ tableColumns count ]; index++ ) {
+            NSTableColumn *column = [ tableColumns objectAtIndex:index ] ;
+            if ( [ [ column identifier ] isEqual:@"Function" ] ) {
+                hasFunctionColumn = YES ;
+                break ;
+            }
+        }
+        if ( hasFunctionColumn ) return (NSOutlineView*)view ;
+    }
+    subviews = [ view subviews ] ;
+    for ( i = 0; i < [ subviews count ]; i++ ) {
+        NSOutlineView *outline = FindMacroDictionaryOutlineView( [ subviews objectAtIndex:i ] ) ;
+        if ( outline ) return outline ;
+    }
+    return nil ;
+}
+
+static void ApplyReadableColorsToMacroDictionaryWindow( NSWindow *window, id delegate )
+{
+    NSOutlineView *outlineView ;
+
+    if ( window == nil ) return ;
+    setAppAppearance( window ) ;
+    outlineView = FindMacroDictionaryOutlineView( [ window contentView ] ) ;
+    if ( outlineView == nil ) return ;
+    ApplyReadableColorsToMacroDictionaryView( [ window contentView ] ) ;
+    [ outlineView setDelegate:delegate ] ;
+	if ( [ outlineView respondsToSelector:@selector(setSelectionHighlightStyle:) ] ) [ outlineView setSelectionHighlightStyle:NSTableViewSelectionHighlightStyleRegular ] ;
+    [ outlineView reloadData ] ;
+    [ outlineView setNeedsDisplay:YES ] ;
+    [ [ window contentView ] setNeedsDisplay:YES ] ;
+}
+
 @implementation MacroMenu
+
+- (void)awakeFromNib
+{
+    NSArray *windows ;
+    int i ;
+
+    [ [ NSNotificationCenter defaultCenter ] addObserver:self selector:@selector(windowBecameVisible:) name:NSWindowDidBecomeKeyNotification object:nil ] ;
+    [ [ NSNotificationCenter defaultCenter ] addObserver:self selector:@selector(windowBecameVisible:) name:NSWindowDidBecomeMainNotification object:nil ] ;
+    [ [ NSNotificationCenter defaultCenter ] addObserver:self selector:@selector(windowBecameVisible:) name:NSWindowDidExposeNotification object:nil ] ;
+    windows = [ NSApp windows ] ;
+    for ( i = 0; i < [ windows count ]; i++ ) {
+        NSWindow *window = [ windows objectAtIndex:i ] ;
+        ApplyReadableColorsToMacroDictionaryWindow( window, self ) ;
+    }
+}
+
+- (void)windowBecameVisible:(NSNotification*)notification
+{
+    NSWindow *window ;
+
+    window = [ notification object ] ;
+    if ( [ window isKindOfClass:[ NSWindow class ] ] ) ApplyReadableColorsToMacroDictionaryWindow( window, self ) ;
+}
+
+- (void)dealloc
+{
+    [ [ NSNotificationCenter defaultCenter ] removeObserver:self ] ;
+    [ super dealloc ] ;
+}
+
+- (void)outlineView:(NSOutlineView*)outlineView willDisplayCell:(id)cell forTableColumn:(NSTableColumn*)tableColumn item:(id)item
+{
+    int row ;
+    Boolean selected ;
+
+    row = [ outlineView rowForItem:item ] ;
+    selected = ( row >= 0 && [ outlineView isRowSelected:row ] ) ;
+    if ( [ cell respondsToSelector:@selector(setTextColor:) ] ) [ cell setTextColor:( selected ) ? macroDictionarySelectedTextColor() : macroDictionaryTextColor() ] ;
+    if ( [ cell respondsToSelector:@selector(setBackgroundColor:) ] ) [ cell setBackgroundColor:macroDictionaryBackgroundColor() ] ;
+    [ outlineView setBackgroundColor:macroDictionaryBackgroundColor() ] ;
+}
+
+- (void)outlineViewSelectionDidChange:(NSNotification*)notification
+{
+	NSOutlineView *outlineView ;
+
+	outlineView = [ notification object ] ;
+	if ( [ outlineView isKindOfClass:[ NSOutlineView class ] ] ) [ outlineView setNeedsDisplay:YES ] ;
+}
 
 - (void)addGeneral:(MacroNode*)node
 {

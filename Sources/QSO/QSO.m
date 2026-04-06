@@ -15,6 +15,77 @@
 
 @implementation QSO
 
+static void setAppAppearance( id object )
+{
+	NSAppearance *appearance ;
+
+	appearance = [ NSApp appearance ] ;
+	if ( object && appearance && [ object respondsToSelector:@selector(setAppearance:) ] ) {
+		[ object setAppearance:appearance ] ;
+	}
+}
+
+static NSColor *fieldBackgroundColor( void )
+{
+	return [ NSColor textBackgroundColor ] ;
+}
+
+static NSColor *fieldTextColor( void )
+{
+	return [ NSColor textColor ] ;
+}
+
+- (void)applyReadableFieldColors:(id)field
+{
+	if ( field == nil ) return ;
+	setAppAppearance( field ) ;
+	if ( [ field respondsToSelector:@selector(setDrawsBackground:) ] ) [ field setDrawsBackground:YES ] ;
+	if ( [ field respondsToSelector:@selector(setBackgroundColor:) ] ) [ field setBackgroundColor:fieldBackgroundColor() ] ;
+	if ( [ field respondsToSelector:@selector(setTextColor:) ] ) [ field setTextColor:fieldTextColor() ] ;
+	if ( [ field currentEditor ] ) {
+		NSText *editor = [ field currentEditor ] ;
+		setAppAppearance( editor ) ;
+		if ( [ editor respondsToSelector:@selector(setBackgroundColor:) ] ) [ (id)editor setBackgroundColor:fieldBackgroundColor() ] ;
+		if ( [ editor respondsToSelector:@selector(setTextColor:) ] ) [ (id)editor setTextColor:fieldTextColor() ] ;
+		if ( [ editor respondsToSelector:@selector(setInsertionPointColor:) ] ) [ (id)editor setInsertionPointColor:fieldTextColor() ] ;
+	}
+}
+
+- (void)controlTextDidBeginEditing:(NSNotification*)notification
+{
+	id field ;
+
+	field = [ notification object ] ;
+	if ( field == callsignField ) activeField = 'C' ;
+	else if ( field == nameField ) activeField = 'N' ;
+	if ( field == callsignField || field == nameField ) [ self applyReadableFieldColors:field ] ;
+}
+
+- (void)controlTextDidEndEditing:(NSNotification*)notification
+{
+	id field ;
+
+	field = [ notification object ] ;
+	if ( field == callsignField || field == nameField ) [ self applyReadableFieldColors:field ] ;
+}
+
+- (void)refreshEditableFieldColors:(id)field
+{
+	[ self applyReadableFieldColors:field ] ;
+}
+
+- (void)callsignFieldActivated:(NSNotification*)notification
+{
+	activeField = 'C' ;
+	[ self applyReadableFieldColors:callsignField ] ;
+}
+
+- (void)nameFieldActivated:(NSNotification*)notification
+{
+	activeField = 'N' ;
+	[ self applyReadableFieldColors:nameField ] ;
+}
+
 //  (Private API)
 - (void)setInterface:(NSControl*)object to:(SEL)selector
 {
@@ -162,6 +233,7 @@ static void convertToUpper( char *string )
 		qsoNumber = @"001" ;
 		previousNumber = @"001" ;
 		day = -1 ;
+		activeField = 'C' ;
 		myExchange = dxExchange = @"" ;
 		appleScript = nil ;
 		strippedCallsign = strippedOp = nil ;
@@ -169,6 +241,7 @@ static void convertToUpper( char *string )
 		if ( [ NSBundle loadNibNamed:@"QSO" owner:self ] ) {
 			// loadNib should have set up view
 			if ( view ) {
+				setAppAppearance( view ) ;
 				//  create a new TabViewItem for QSO
 				tabItem = [ [ NSTabViewItem alloc ] init ] ;
 				[ tabItem setLabel:NSLocalizedString( @"QSO", nil ) ] ;
@@ -187,6 +260,14 @@ static void convertToUpper( char *string )
 				[ self setUTC ] ;
 				[ self registerAndUpdateTime ] ;
 				[ NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(tick:) userInfo:self repeats:YES ] ;
+				[ self applyReadableFieldColors:callsignField ] ;
+				[ self applyReadableFieldColors:nameField ] ;
+				[ self applyReadableFieldColors:utcDateField ] ;
+				[ self applyReadableFieldColors:utcTimeField ] ;
+				[ [ NSNotificationCenter defaultCenter ] addObserver:self selector:@selector(callsignFieldActivated:) name:NSControlTextDidBeginEditingNotification object:callsignField ] ;
+				[ [ NSNotificationCenter defaultCenter ] addObserver:self selector:@selector(nameFieldActivated:) name:NSControlTextDidBeginEditingNotification object:nameField ] ;
+				if ( [ callsignField respondsToSelector:@selector(setDelegate:) ] ) [ callsignField setDelegate:self ] ;
+				if ( [ nameField respondsToSelector:@selector(setDelegate:) ] ) [ nameField setDelegate:self ] ;
 
 
 				[ self setInterface:callButton to:@selector(transferCall) ] ;	
@@ -411,6 +492,11 @@ static void convertToUpper( char *string )
 	if ( f ) [ f setStringValue:[ NSString stringWithCString:selectedString encoding:kTextEncoding ] ] ;
 }
 
+- (int)activeCaptureField
+{
+	return activeField ;
+}
+
 - (void)logScriptChanged:(NSString*)fileName
 {
 	NSURL *url ;
@@ -468,14 +554,18 @@ static void convertToUpper( char *string )
 //  v1.01a
 - (void)selectCall 
 {
+	activeField = 'C' ;
 	[ callsignField becomeFirstResponder ] ;
+	[ self performSelector:@selector(refreshEditableFieldColors:) withObject:callsignField afterDelay:0.0 ] ;
 	[ callsignField setStringValue:@"" ] ;
 }
 
 //  v1.01a
 - (void)selectName
 {
+	activeField = 'N' ;
 	[ nameField becomeFirstResponder ] ;
+	[ self performSelector:@selector(refreshEditableFieldColors:) withObject:nameField afterDelay:0.0 ] ;
 	[ nameField setStringValue:@"" ] ;
 }
 

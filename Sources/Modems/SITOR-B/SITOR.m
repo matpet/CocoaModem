@@ -32,6 +32,11 @@
 
 //  SITOR : (ContestInterface) : (MacroPanel) : Modem : NSObject
 
+- (Boolean)allowQSOFieldCapture
+{
+	return NO ;
+}
+
 - (id)initIntoTabView:(NSTabView*)tabview manager:(ModemManager*)mgr
 {
 	CMTonePair tonepair ;

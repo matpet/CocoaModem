@@ -204,6 +204,7 @@
 	- (NSRange)getCallsignString:(NSTextView*)textView from:(NSRange)selectedRange ;
 	- (NSRange)getExchangeString:(NSTextView*)textView from:(NSRange)selectedRange ;
 	- (void)upperCase:(NSString*)string into:(char*)captured ;
+	- (Boolean)allowQSOFieldCapture ;
 		
 	//  -- AppleScript support --
 	// commands

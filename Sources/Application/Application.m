@@ -424,10 +424,78 @@ static NSArray *CMXMLRPCParamBlocks( NSString *xml )
 
 @implementation Application
 
+- (void)installAppearanceMenuItem
+{
+	NSMenu *appMenu ;
+	int i, index ;
+
+	if ( darkModeMenuItem != nil ) return ;
+	if ( [ NSApp mainMenu ] == nil ) return ;
+	appMenu = [ [ [ NSApp mainMenu ] itemAtIndex:0 ] submenu ] ;
+	if ( appMenu == nil ) return ;
+	index = [ appMenu numberOfItems ] ;
+	for ( i = 0; i < [ appMenu numberOfItems ]; i++ ) {
+		NSMenuItem *item = [ appMenu itemAtIndex:i ] ;
+		if ( [ item action ] == @selector(showPreferences:) ) {
+			index = i+1 ;
+			break ;
+		}
+	}
+	if ( index < [ appMenu numberOfItems ] && ![ [ appMenu itemAtIndex:index ] isSeparatorItem ] ) {
+		[ appMenu insertItem:[ NSMenuItem separatorItem ] atIndex:index ] ;
+		index++ ;
+	}
+	darkModeMenuItem = [ [ NSMenuItem alloc ] initWithTitle:@"Use Dark Mode" action:@selector(toggleDarkMode:) keyEquivalent:@"" ] ;
+	[ darkModeMenuItem setTarget:self ] ;
+	[ darkModeMenuItem setState:( appDarkMode ) ? NSOnState : NSOffState ] ;
+	[ appMenu insertItem:darkModeMenuItem atIndex:index ] ;
+}
+
+- (void)applyAppAppearance
+{
+	NSAppearance *appearance ;
+	NSArray *windows ;
+	int i ;
+
+	appearance = [ NSAppearance appearanceNamed:( appDarkMode ) ? NSAppearanceNameDarkAqua : NSAppearanceNameAqua ] ;
+	if ( [ NSApp respondsToSelector:@selector(setAppearance:) ] ) [ NSApp setAppearance:appearance ] ;
+	windows = [ NSApp windows ] ;
+	for ( i = 0; i < [ windows count ]; i++ ) {
+		NSWindow *window = [ windows objectAtIndex:i ] ;
+		if ( [ window respondsToSelector:@selector(setAppearance:) ] ) [ window setAppearance:appearance ] ;
+		CMApplyAppearanceRecursively( [ window contentView ], appearance ) ;
+		[ [ window contentView ] setNeedsDisplay:YES ] ;
+	}
+	if ( darkModeMenuItem ) [ darkModeMenuItem setState:( appDarkMode ) ? NSOnState : NSOffState ] ;
+}
+
+- (void)setDarkModeState:(Boolean)state save:(Boolean)savePreference
+{
+	appDarkMode = state ;
+	[ self applyAppAppearance ] ;
+	if ( savePreference && config ) {
+		[ config setInt:( appDarkMode ) ? 1 : 0 forKey:kAppDarkMode ] ;
+		[ config savePlist ] ;
+	}
+}
+
 // global
 Boolean gFinishedInitialization = NO ;
 Boolean gSplashShowing = NO ;
 NSThread *mainThread ;
+
+static void CMApplyAppearanceRecursively( id object, NSAppearance *appearance )
+{
+	NSArray *subviews ;
+	int i ;
+
+	if ( object == nil || appearance == nil ) return ;
+	if ( [ object respondsToSelector:@selector(setAppearance:) ] ) [ object setAppearance:appearance ] ;
+	if ( [ object respondsToSelector:@selector(subviews) ] ) {
+		subviews = [ object subviews ] ;
+		for ( i = 0; i < [ subviews count ]; i++ ) CMApplyAppearanceRecursively( [ subviews objectAtIndex:i ], appearance ) ;
+	}
+}
 
 static NSString *CMXMLRPCRawReceiveStream( Modem *modem )
 {
@@ -480,7 +548,7 @@ static Boolean CMXMLRPCIsReceiveCommand( NSString *text )
 	params = [ request objectForKey:@"params" ] ;
 	modem = [ stdManager currentModem ] ;
 	if ( [ method isEqualToString:@"fldigi.name" ] ) {
-		[ request setObject:@"cocoaModem 2.1rc1" forKey:@"result" ] ;
+		[ request setObject:@"cocoaModem 2.1rc2" forKey:@"result" ] ;
 		[ request setObject:@"string" forKey:@"type" ] ;
 		return ;
 	}
@@ -884,6 +952,10 @@ static Boolean CMXMLRPCIsReceiveCommand( NSString *text )
 	NSString *path ;
 	const char *str ;
 	int i ;
+
+	if ( [ NSApp respondsToSelector:@selector(setAppearance:) ] ) {
+		[ NSApp setAppearance:[ NSAppearance appearanceNamed:NSAppearanceNameAqua ] ] ;
+	}
 	
 	//	v1.01b
 	voiceAssist = NO ;
@@ -958,6 +1030,9 @@ static Boolean CMXMLRPCIsReceiveCommand( NSString *text )
 	
 	tempPref = [ [ Preferences alloc ] init ] ;
 	[ tempPref fetchPlist:NO ] ;
+	appDarkMode = ( [ tempPref intValueForKey:kAppDarkMode ] != 0 ) ;
+	[ self installAppearanceMenuItem ] ;
+	[ self applyAppAppearance ] ;
 	
 	Boolean dontOpenRouter = [ tempPref intValueForKey:kNoOpenRouter ] ;
 	
@@ -1039,7 +1114,7 @@ static Boolean CMXMLRPCIsReceiveCommand( NSString *text )
 	appleScript = [ [ AppDelegate alloc ] initFromApplication:self ] ;
 	xmlrpcServer = [ [ CMXMLRPCServer alloc ] initWithApplication:self ] ;
 	[ xmlrpcServer start ] ;
-	if ( [ self mainWindow ] ) [ [ self mainWindow ] setTitle:@"cocoaModem 2.1rc1" ] ;
+	if ( [ self mainWindow ] ) [ [ self mainWindow ] setTitle:@"cocoaModem 2.1rc2" ] ;
 	
 	[ [ NSApp delegate ] setIsLite:isLite ] ;
 
@@ -1198,6 +1273,11 @@ static Boolean CMXMLRPCIsReceiveCommand( NSString *text )
 		[ assistVoice speak:@"Voice Assist Offff." ] ;
 		[ assistVoice setVoiceEnable:NO ] ;
 	}
+}
+
+- (IBAction)toggleDarkMode:(id)sender
+{
+	[ self setDarkModeState:( [ sender state ] == NSOffState ) save:YES ] ;
 }
 
 //  update appearance from "General" preferences
@@ -1873,6 +1953,7 @@ static Boolean CMXMLRPCIsReceiveCommand( NSString *text )
 
 - (void)dealloc
 {
+	[ darkModeMenuItem release ] ;
 	[ mainReceiverVoice release ] ;
 	[ subReceiverVoice release ] ;
 	[ transmitterVoice release ] ;

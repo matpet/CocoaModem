@@ -13,19 +13,13 @@
 	#import "KeyerInterface.h"
 	#import "MicroKeyer.h"
 	#import "RTTY.h"
+	#import "SerialLineKeyer.h"
 
 
 	#define	kDigiKeyerFSKIndex		0
 	#define	kMicroKeyerFSKIndex		1
 	#define	kSerialDTRLine			0
 	#define	kSerialRTSLine			1
-
-	typedef struct {
-		int token ;
-		int line ;
-		NSString *path ;
-		NSString *name ;
-	} SerialFSKPort ;
 
 	typedef enum _FSKShiftState {
 		kLTRSshift = 0,
@@ -42,6 +36,7 @@
 		int currentFd ;
 		int currentPortToken ;
 		int currentSerialLine ;
+		SerialLineKeyer *currentSerialPort ;
 		float currentBitPeriod ;
 		int currentStopBits ;
 		Boolean serialInvert ;
@@ -68,7 +63,7 @@
 		Boolean spaceFollowedFIGS ;								//  use robust mode to force compatibility of figs followed by space
 		int implicitState ;
 		int robustCount ;
-		SerialFSKPort serialPorts[64] ;
+		SerialLineKeyer *serialPorts[64] ;
 		int serialPortCount ;
 	}
 	

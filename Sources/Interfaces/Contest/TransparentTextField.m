@@ -7,6 +7,35 @@
 //
 
 #import "TransparentTextField.h"
+#import <QuartzCore/QuartzCore.h>
+
+
+static void setEditorColors( NSText* editor )
+{
+	NSDictionary *attributes ;
+
+	if ( editor == nil ) return ;
+	if ( [ editor respondsToSelector:@selector(setTextColor:) ] ) [ (id)editor setTextColor:[ NSColor blackColor ] ] ;
+	if ( [ editor respondsToSelector:@selector(setInsertionPointColor:) ] ) [ (id)editor setInsertionPointColor:[ NSColor blackColor ] ] ;
+	attributes = @{
+		NSForegroundColorAttributeName:[ NSColor blackColor ],
+		NSBackgroundColorAttributeName:[ NSColor selectedTextBackgroundColor ]
+	} ;
+	if ( [ editor respondsToSelector:@selector(setSelectedTextAttributes:) ] ) [ (id)editor setSelectedTextAttributes:attributes ] ;
+}
+
+static void setFieldHighlightState( NSView *view, Boolean state )
+{
+	CALayer *layer ;
+
+	if ( view == nil ) return ;
+	[ view setWantsLayer:YES ] ;
+	layer = [ view layer ] ;
+	if ( layer == nil ) return ;
+	[ layer setCornerRadius:3.0 ] ;
+	[ layer setBorderWidth:( state ) ? 2.0 : 1.0 ] ;
+	[ layer setBorderColor:( state ) ? [ [ NSColor redColor ] CGColor ] : [ [ NSColor lightGrayColor ] CGColor ] ] ;
+}
 
 
 @implementation TransparentTextField
@@ -21,9 +50,15 @@
 	fieldType = 0 ;
 	savedString = @"" ;
 	ignore = NO ;
-	[ self setBezeled:NO ] ;
-	[ self setBordered:NO ] ;			// cocoa screws up vertical positioning if transnsprent view is not bordered
-	[ self setDrawsBackground:NO ] ;
+	[ self setBezeled:YES ] ;
+	[ self setBordered:YES ] ;
+	[ self setDrawsBackground:YES ] ;
+	[ self setBackgroundColor:[ NSColor whiteColor ] ] ;
+	[ self setTextColor:[ NSColor blackColor ] ] ;
+	[ self setEditable:YES ] ;
+	[ self setSelectable:YES ] ;
+	[ self setEnabled:YES ] ;
+	setEditorColors( [ self currentEditor ] ) ;
 }
 
 //  kCallsignTextField, kExchangeTextField
@@ -39,7 +74,13 @@
 
 - (void)markAsSelected:(Boolean)state
 {
-	[ self setBordered:state ] ;
+	[ self setBordered:YES ] ;
+	setFieldHighlightState( self, state ) ;
+}
+
+- (void)notifyFieldSelected
+{
+	[ [ NSNotificationCenter defaultCenter ] postNotificationName:@"SelectNewField" object:self ] ;
 }
 
 - (NSString*)clickedString
@@ -74,11 +115,18 @@
 		return YES ;
 	}
 	if ( [ super becomeFirstResponder ] ) {
-		//  inform Contest object that a new field is selected
-		[ [ NSNotificationCenter defaultCenter ] postNotificationName:@"SelectNewField" object:self ] ;
+		setEditorColors( [ self currentEditor ] ) ;
+		[ self notifyFieldSelected ] ;
 		return YES ;
 	}
 	return NO ;
+}
+
+- (void)mouseDown:(NSEvent*)event
+{
+	savedString = [ self stringValue ] ;
+	if ( !ignore ) [ self notifyFieldSelected ] ;
+	[ super mouseDown:event ] ;
 }
 
 - (void)moveAbove
@@ -92,38 +140,16 @@
 	[ self release ] ;  // addSubview should do one retain
 }
 
-static float lucidaGrandeOffset[] = { 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 0, 1, 1, -1, -1, -1, -1 } ;
-static float verdanaOffset[] = { 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 1, -2, -3, -4, -5, -6, -7, -8 } ;
-static float tektonOffset[] = { 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 1, 1, 2, -1, 0, 0 } ;
-static float monacoOffset[] = { 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 1, -4, -4, -4, -5, -7, -8, -8 } ;
-
 //  NSNotification with name "ContestFont" is sent when font changes
 - (void)setContestFont:(NSNotification*)notify
 {
 	NSFont *font ;
-	NSString *name ;
-	int index ;
-	float y, size, matrix[6] = { 0, 0, 0, 0, 0, 0 } ;
 	
 	font = [ notify object ] ;
-	size = [ font pointSize ] ;
-	name = [ font fontName ] ;
-	
-	//  do some centering adjustments for Panther
-	y = 0 ;
-	index = size+0.5 ;
-	if ( index > 20 ) index = 20 ;
-	
-	if ( [ self sameFont:name asBase:@"LucidaGrande" ] ) y = lucidaGrandeOffset[index] ;
-	else if ( [ self sameFont:name asBase:@"Verdana" ] ) y = verdanaOffset[index] ;
-	else if ( [ self sameFont:name asBase:@"Tekton" ] ) y = tektonOffset[index] ;
-	else if ( [ self sameFont:name asBase:@"Monaco" ] ) y = monacoOffset[index] ;
-	else y = verdanaOffset[index] ;
-
-	matrix[0] = matrix[3] = size ;	
-	matrix[5] = y ;
-	
-	[ self setFont:[ NSFont fontWithName:[ font fontName ] matrix:matrix ] ] ;
+	if ( font ) [ self setFont:font ] ;
+	[ self setBackgroundColor:[ NSColor whiteColor ] ] ;
+	[ self setTextColor:[ NSColor blackColor ] ] ;
+	setEditorColors( [ self currentEditor ] ) ;
 
 	//  redraw
 	[ self setStringValue:[ self stringValue ] ] ;

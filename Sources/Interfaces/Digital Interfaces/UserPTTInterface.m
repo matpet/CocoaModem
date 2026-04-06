@@ -15,6 +15,7 @@
 {
 	[ scriptFolder autorelease ] ;
 	scriptFolder = [ [ newfolder stringByExpandingTildeInPath ] retain ] ;
+	connected = NO ;
 
 	if ( keyScript ) [ keyScript release ] ;
 	if ( unkeyScript ) [ unkeyScript release ] ;
@@ -29,10 +30,18 @@
 			unkeyScript = [ self loadScriptForPath:[ scriptFolder stringByAppendingString:@"/pttUnkey.scpt" ] ] ;
 			if ( unkeyScript != nil ) {
 				quitScript = [ self loadScriptForPath:[ scriptFolder stringByAppendingString:@"/pttQuit.scpt" ] ] ;
+				scriptsLoaded = YES ;
+				return YES ;
 			}
-			scriptsLoaded = YES ;
 		}
-		return YES ;
+		if ( keyScript ) [ keyScript release ] ;
+		if ( unkeyScript ) [ unkeyScript release ] ;
+		if ( quitScript ) [ quitScript release ] ;
+		keyScript = nil ;
+		unkeyScript = nil ;
+		quitScript = nil ;
+		scriptsLoaded = NO ;
+		return NO ;
 	}
 	else {
 		scriptFolder = @"" ;

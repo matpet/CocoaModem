@@ -421,11 +421,14 @@
 - (void)changeTransmitStateTo:(Boolean)state
 {
 	NSColor *indicatorColor ;
+	Boolean wasTransmit ;
+
+	wasTransmit = transmitState ;
+	if ( state == YES && wasTransmit == NO ) [ self ptt:YES ] ;
 	
 	transmitState = [ config turnOnTransmission:state button:transmitButton ] ;
 	
 	if ( transmitState == YES ) {
-		[ self ptt:YES ] ;
 		indicatorColor =  [ NSColor redColor ] ;
 		[ [ transmitView window ] makeFirstResponder:transmitView ] ;
 		if ( timeout ) [ timeout invalidate ] ;
@@ -436,6 +439,7 @@
 		[ NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(delayTransmit:) userInfo:self repeats:NO ] ;
 	}
 	else {
+		if ( state == YES && wasTransmit == NO ) [ self ptt:NO ] ;
 		[ self ptt:NO ] ;
 		if ( timeout ) [ timeout invalidate ] ;
 		timeout = nil ;

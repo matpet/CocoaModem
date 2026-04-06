@@ -28,6 +28,7 @@
 	- (NSString*)captions ;
 	
 	- (void)showMacroSheet:(NSWindow*)window ;
+	- (IBAction)import:(id)sender ;
 	
 	- (void)delegateTextChangesTo:(ContestManager*)manager ;
 	

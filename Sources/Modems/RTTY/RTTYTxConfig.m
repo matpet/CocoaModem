@@ -184,7 +184,6 @@ static float stopDuration[3] = { 1.0, 1.5, 2.0 } ;
 	
 	[ self updateColorsFromPreferences:(Preferences*)pref configSet:&configSet ] ;
 
-
 	if ( ![ modemDest updateFromPlist:pref ] ) {
 		[ Messages alertWithMessageText:NSLocalizedString( @"RTTY settings needs to be reselected", nil ) informativeText:NSLocalizedString( @"Device removed", nil ) ] ;
 	}	

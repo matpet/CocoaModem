@@ -30,6 +30,7 @@
 		84072FE309076F2D006DA88B /* RTTY Roundup.xml in Resources */ = {isa = PBXBuildFile; fileRef = 84072FDB09076F2D006DA88B /* RTTY Roundup.xml */; };
 		84072FE409076F2D006DA88B /* TARA.xml in Resources */ = {isa = PBXBuildFile; fileRef = 84072FDC09076F2D006DA88B /* TARA.xml */; };
 		84072FE509076F2D006DA88B /* XE RTTY.xml in Resources */ = {isa = PBXBuildFile; fileRef = 84072FDD09076F2D006DA88B /* XE RTTY.xml */; };
+		84EA0001107674DA00B83EDD /* EA RTTY.xml in Resources */ = {isa = PBXBuildFile; fileRef = 84EA0000107674DA00B83EDD /* EA RTTY.xml */; };
 		84072FE909076F5F006DA88B /* Versions in Resources */ = {isa = PBXBuildFile; fileRef = 84072FE809076F5F006DA88B /* Versions */; };
 		84072FEB09076F72006DA88B /* cocoaModem.icns in Resources */ = {isa = PBXBuildFile; fileRef = 84072FEA09076F72006DA88B /* cocoaModem.icns */; };
 		8407326E09077551006DA88B /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 8407326D09077551006DA88B /* main.m */; };
@@ -214,6 +215,7 @@
 		84877126107674DA00B83EDD /* RTTYRoundup.m in Sources */ = {isa = PBXBuildFile; fileRef = 848770F9107674DA00B83EDD /* RTTYRoundup.m */; };
 		84877127107674DA00B83EDD /* RTTYRoundupMults.m in Sources */ = {isa = PBXBuildFile; fileRef = 848770FB107674DA00B83EDD /* RTTYRoundupMults.m */; };
 		84877128107674DA00B83EDD /* SP RTTY.m in Sources */ = {isa = PBXBuildFile; fileRef = 848770FD107674DA00B83EDD /* SP RTTY.m */; };
+		84EA0004107674DA00B83EDD /* EA RTTY.m in Sources */ = {isa = PBXBuildFile; fileRef = 84EA0003107674DA00B83EDD /* EA RTTY.m */; };
 		84877129107674DA00B83EDD /* TARA.m in Sources */ = {isa = PBXBuildFile; fileRef = 848770FF107674DA00B83EDD /* TARA.m */; };
 		8487712A107674DA00B83EDD /* WPX.m in Sources */ = {isa = PBXBuildFile; fileRef = 84877101107674DA00B83EDD /* WPX.m */; };
 		8487712B107674DA00B83EDD /* XE RTTY.m in Sources */ = {isa = PBXBuildFile; fileRef = 84877103107674DA00B83EDD /* XE RTTY.m */; };
@@ -246,6 +248,7 @@
 		848771741076789F00B83EDD /* CMFSKMixer.m in Sources */ = {isa = PBXBuildFile; fileRef = 848771611076789F00B83EDD /* CMFSKMixer.m */; };
 		8487718110767A1300B83EDD /* FSK.m in Sources */ = {isa = PBXBuildFile; fileRef = 8487717E10767A1300B83EDD /* FSK.m */; };
 		8487718210767A1300B83EDD /* FSKHub.m in Sources */ = {isa = PBXBuildFile; fileRef = 8487718010767A1300B83EDD /* FSKHub.m */; };
+		84F000030000000000000001 /* SerialLineKeyer.m in Sources */ = {isa = PBXBuildFile; fileRef = 84F000020000000000000001 /* SerialLineKeyer.m */; };
 		848771F210767F4400B83EDD /* CMBandpassFilter.m in Sources */ = {isa = PBXBuildFile; fileRef = 848771D510767F4400B83EDD /* CMBandpassFilter.m */; };
 		848771F310767F4400B83EDD /* CMComplexFIR.c in Sources */ = {isa = PBXBuildFile; fileRef = 848771D610767F4400B83EDD /* CMComplexFIR.c */; };
 		848771F410767F4400B83EDD /* CMDSPWindow.c in Sources */ = {isa = PBXBuildFile; fileRef = 848771D810767F4400B83EDD /* CMDSPWindow.c */; };
@@ -467,6 +470,7 @@
 		84072FDB09076F2D006DA88B /* RTTY Roundup.xml */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.xml; path = "RTTY Roundup.xml"; sourceTree = "<group>"; };
 		84072FDC09076F2D006DA88B /* TARA.xml */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.xml; path = TARA.xml; sourceTree = "<group>"; };
 		84072FDD09076F2D006DA88B /* XE RTTY.xml */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text.xml; path = "XE RTTY.xml"; sourceTree = "<group>"; };
+		84EA0000107674DA00B83EDD /* EA RTTY.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = "EA RTTY.xml"; sourceTree = "<group>"; };
 		84072FE809076F5F006DA88B /* Versions */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Versions; sourceTree = "<group>"; };
 		84072FEA09076F72006DA88B /* cocoaModem.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; name = cocoaModem.icns; path = icon/cocoaModem.icns; sourceTree = "<group>"; };
 		84072FF209077011006DA88B /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/About.nib; sourceTree = "<group>"; };
@@ -854,6 +858,8 @@
 		848770FB107674DA00B83EDD /* RTTYRoundupMults.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RTTYRoundupMults.m; sourceTree = "<group>"; };
 		848770FC107674DA00B83EDD /* SP RTTY.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SP RTTY.h"; sourceTree = "<group>"; };
 		848770FD107674DA00B83EDD /* SP RTTY.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "SP RTTY.m"; sourceTree = "<group>"; };
+		84EA0002107674DA00B83EDD /* EA RTTY.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "EA RTTY.h"; sourceTree = "<group>"; };
+		84EA0003107674DA00B83EDD /* EA RTTY.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "EA RTTY.m"; sourceTree = "<group>"; };
 		848770FE107674DA00B83EDD /* TARA.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TARA.h; sourceTree = "<group>"; };
 		848770FF107674DA00B83EDD /* TARA.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TARA.m; sourceTree = "<group>"; };
 		84877100107674DA00B83EDD /* WPX.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WPX.h; sourceTree = "<group>"; };
@@ -921,6 +927,8 @@
 		8487717E10767A1300B83EDD /* FSK.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FSK.m; sourceTree = "<group>"; };
 		8487717F10767A1300B83EDD /* FSKHub.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FSKHub.h; sourceTree = "<group>"; };
 		8487718010767A1300B83EDD /* FSKHub.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FSKHub.m; sourceTree = "<group>"; };
+		84F000010000000000000001 /* SerialLineKeyer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SerialLineKeyer.h; sourceTree = "<group>"; };
+		84F000020000000000000001 /* SerialLineKeyer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SerialLineKeyer.m; sourceTree = "<group>"; };
 		848771D010767F4400B83EDD /* CoreFilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CoreFilter.h; sourceTree = "<group>"; };
 		848771D110767F4400B83EDD /* CoreFilterTypes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CoreFilterTypes.h; sourceTree = "<group>"; };
 		848771D410767F4400B83EDD /* CMBandpassFilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CMBandpassFilter.h; sourceTree = "<group>"; };
@@ -1384,6 +1392,7 @@
 				84D6E99A0D396EB0006D376E /* RST - Exchange.xml */,
 				84072FDA09076F2D006DA88B /* RST_Exchange.xml */,
 				84072FDB09076F2D006DA88B /* RTTY Roundup.xml */,
+				84EA0000107674DA00B83EDD /* EA RTTY.xml */,
 				8452B40C09DE1B4C0050F52E /* SP RTTY.xml */,
 				84072FDC09076F2D006DA88B /* TARA.xml */,
 				84072FDD09076F2D006DA88B /* XE RTTY.xml */,
@@ -2158,6 +2167,8 @@
 				848770F9107674DA00B83EDD /* RTTYRoundup.m */,
 				848770FA107674DA00B83EDD /* RTTYRoundupMults.h */,
 				848770FB107674DA00B83EDD /* RTTYRoundupMults.m */,
+				84EA0002107674DA00B83EDD /* EA RTTY.h */,
+				84EA0003107674DA00B83EDD /* EA RTTY.m */,
 				848770FC107674DA00B83EDD /* SP RTTY.h */,
 				848770FD107674DA00B83EDD /* SP RTTY.m */,
 				848770FE107674DA00B83EDD /* TARA.h */,
@@ -2401,6 +2412,8 @@
 				84F77F2312E4A3CA00852473 /* DigitalInterfaces.m */,
 				84F77F0E12E4A3AB00852473 /* DigitalInterface.h */,
 				84F77F0F12E4A3AB00852473 /* DigitalInterface.m */,
+				84F000010000000000000001 /* SerialLineKeyer.h */,
+				84F000020000000000000001 /* SerialLineKeyer.m */,
 				84F77F0C12E4A3AB00852473 /* CocoaPTTInterface.h */,
 				84F77F0D12E4A3AB00852473 /* CocoaPTTInterface.m */,
 				84F77F3412E4B47F00852473 /* MacLoggerDX.h */,
@@ -2499,6 +2512,7 @@
 				84D6E99B0D396EB0006D376E /* RST - Exchange.xml in Resources */,
 				84072FE209076F2D006DA88B /* RST_Exchange.xml in Resources */,
 				84072FE309076F2D006DA88B /* RTTY Roundup.xml in Resources */,
+				84EA0001107674DA00B83EDD /* EA RTTY.xml in Resources */,
 				8452B40D09DE1B4C0050F52E /* SP RTTY.xml in Resources */,
 				84072FE409076F2D006DA88B /* TARA.xml in Resources */,
 				84072FE509076F2D006DA88B /* XE RTTY.xml in Resources */,
@@ -2740,6 +2754,7 @@
 				84877125107674DA00B83EDD /* RSTExchange.m in Sources */,
 				84877126107674DA00B83EDD /* RTTYRoundup.m in Sources */,
 				84877127107674DA00B83EDD /* RTTYRoundupMults.m in Sources */,
+				84EA0004107674DA00B83EDD /* EA RTTY.m in Sources */,
 				84877128107674DA00B83EDD /* SP RTTY.m in Sources */,
 				84877129107674DA00B83EDD /* TARA.m in Sources */,
 				8487712A107674DA00B83EDD /* WPX.m in Sources */,
@@ -2773,6 +2788,7 @@
 				848771741076789F00B83EDD /* CMFSKMixer.m in Sources */,
 				8487718110767A1300B83EDD /* FSK.m in Sources */,
 				8487718210767A1300B83EDD /* FSKHub.m in Sources */,
+				84F000030000000000000001 /* SerialLineKeyer.m in Sources */,
 				848771F210767F4400B83EDD /* CMBandpassFilter.m in Sources */,
 				848771F310767F4400B83EDD /* CMComplexFIR.c in Sources */,
 				848771F410767F4400B83EDD /* CMDSPWindow.c in Sources */,
@@ -3313,7 +3329,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "cocoaModem 2.0";
 				SDKROOT = macosx;
@@ -3337,7 +3353,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "cocoaModem 2.0";
 				SDKROOT = macosx;
@@ -3366,7 +3382,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "cocoaModem 2.0";
 				SDKROOT = macosx;

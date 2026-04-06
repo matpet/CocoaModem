@@ -7,6 +7,24 @@
 //
 
 #import "ContestInterface.h"
+static int MacroIndexFromMatrix( id sender )
+{
+	NSCell *cell ;
+	NSPoint point ;
+	int row, column ;
+
+	if ( sender == nil || ![ sender isKindOfClass:[ NSMatrix class ] ] ) return -1 ;
+	cell = [ sender selectedCell ] ;
+	if ( cell && [ cell tag ] >= 0 ) return (int)[ cell tag ] ;
+	column = (int)[ sender selectedColumn ] ;
+	if ( column >= 0 ) return column ;
+	point = [ sender convertPoint:[ [ NSApp currentEvent ] locationInWindow ] fromView:nil ] ;
+	if ( [ sender getRow:&row column:&column ofCellAtPoint:point ] ) return column ;
+	point = [ sender convertPoint:[ [ sender window ] mouseLocationOutsideOfEventStream ] fromView:nil ] ;
+	if ( [ sender getRow:&row column:&column ofCellAtPoint:point ] ) return column ;
+	return -1 ;
+}
+
 #include "Application.h"
 #include "Contest.h"
 #include "ContestBar.h"
@@ -19,6 +37,14 @@
 
 
 @implementation ContestInterface
+
+- (void)cancelPendingFieldTimer
+{
+	if ( pendingFieldTimer ) {
+		[ pendingFieldTimer invalidate ] ;
+		pendingFieldTimer = nil ;
+	}
+}
 
 - (id)initIntoTabView:(NSTabView*)tabview nib:(NSString*)nib manager:(ModemManager*)mgr
 {
@@ -50,6 +76,7 @@
 {
 	if ( contestBar ) [ contestBar cancel ] ;
 	if ( self != [ contestManager selectedContestInterface ] ) return ;
+	[ self cancelPendingFieldTimer ] ;
 	currentField = [ notify object ] ;
 	selectedField = kCallsignTextField ;
 }
@@ -58,6 +85,7 @@
 {
 	if ( contestBar ) [ contestBar cancel ] ;
 	if ( self != [ contestManager selectedContestInterface ] ) return ;
+	[ self cancelPendingFieldTimer ] ;
 	currentField = [ notify object ] ;
 	selectedField = kExchangeTextField ;
 }
@@ -66,6 +94,7 @@
 {
 	if ( contestBar ) [ contestBar cancel ] ;
 	if ( self != [ contestManager selectedContestInterface ] ) return ;
+	[ self cancelPendingFieldTimer ] ;
 	currentField = [ notify object ] ;
 	selectedField = kExtraTextField ;
 }
@@ -91,6 +120,7 @@
 	currentSheet = 0 ;
 	contestModeIndex = kContestModeCQ ;
 	selectedField = 0 ;
+	pendingFieldTimer = nil ;
 	inContestMode = NO ;
 	contest = nil ;
 	master = nil ;
@@ -98,6 +128,10 @@
 	mainRunLoop = [ NSRunLoop currentRunLoop ] ;
 	if ( contestDate && contestTime ) {
 		[ [ NSNotificationCenter defaultCenter ] addObserver:self selector:@selector(timeTick:) name:@"MinuteTick" object:nil ] ;
+	}
+	if ( contestMode ) {
+		[ contestMode setTarget:self ] ;
+		[ contestMode setAction:@selector(contestModeChanged:) ] ;
 	}
 	[ [ NSNotificationCenter defaultCenter ] addObserver:self selector:@selector(callFieldSelected:) name:CallNotify object:nil ] ;
 	[ [ NSNotificationCenter defaultCenter ] addObserver:self selector:@selector(exchFieldSelected:) name:ExchangeNotify object:nil ] ;
@@ -199,10 +233,15 @@
 {
 	int index, sheet ;
 
-	index = [ sender selectedColumn ] ;
+	index = MacroIndexFromMatrix( sender ) ;
+	if ( index < 0 || index > 7 ) {
+		[ [ NSNotificationCenter defaultCenter ] postNotificationName:@"SysBeep" object:nil ] ;
+		return ;
+	}
 	sheet = currentSheet+contestModeIndex ;
 	[ self newMacroForContestBar:index sheet:sheet ] ;
 	[ contestManager executeContestMacro:index sheet:sheet modem:self ] ;
+	if ( [ sender isKindOfClass:[ NSMatrix class ] ] ) [ sender deselectSelectedCell ] ;
 }
 
 - (IBAction)showContestMacroSheet:(id)sender
@@ -227,6 +266,7 @@
 	t = ( contestModeIndex ) ? 0 : 1 ;
 	[ [ sender cellAtRow:0 column:t ] setState:NSOffState ] ;
 	[ [ sender cellAtRow:0 column:1-t ] setState:NSOnState ] ;
+	if ( contestBar ) [ contestBar selectDefaultRepeatMacro ] ;
 	[ self updateContestMacroButtons ] ;
 	[ contestManager contestSwitchedToCQ:( contestModeIndex == kContestModeCQ ) ] ;
 }
@@ -248,7 +288,7 @@
 	properClick = [ (ExchangeView*)textView getAndClearMouseClick ] ;
 	controlClick = [ (ExchangeView*)textView getAndClearRightMouse ] ;
 	
-	if ( !properClick || !controlClick || !inContestMode ) {
+	if ( !properClick || !inContestMode ) {
 		range = [ super captureCallsign:textView willChangeSelectionFromCharacterRange:oldSelectedCharRange toCharacterRange:newSelectedCharRange ] ;
 	}
 	else {
@@ -336,11 +376,15 @@
 
 - (void)delayedFinishClick:(NSTimer*)timer
 {
+	if ( timer != pendingFieldTimer ) return ;
+	pendingFieldTimer = nil ;
 	[ [ NSNotificationCenter defaultCenter ] postNotificationName:@"FinishControlClick" object:nil ] ;
 }
 
 - (void)delayedSelectField:(NSTimer*)timer
 {
+	if ( timer != pendingFieldTimer ) return ;
+	pendingFieldTimer = nil ;
 	[ [ NSNotificationCenter defaultCenter ] postNotificationName:@"ReselectField" object:nil ] ;
 }
 
@@ -348,8 +392,9 @@
 {
 	SEL selector ;
 
+	[ self cancelPendingFieldTimer ] ;
 	selector = ( success ) ? @selector(delayedFinishClick:) : @selector(delayedSelectField:) ;
-	[ NSTimer scheduledTimerWithTimeInterval:0.25 target:self selector:selector userInfo:self repeats:NO ] ;
+	pendingFieldTimer = [ NSTimer scheduledTimerWithTimeInterval:0.25 target:self selector:selector userInfo:self repeats:NO ] ;
 }
 
 

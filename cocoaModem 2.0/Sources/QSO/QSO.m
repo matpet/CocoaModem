@@ -15,6 +15,50 @@
 
 @implementation QSO
 
+static void setLegacyAquaAppearance( id object )
+{
+	if ( object && [ object respondsToSelector:@selector(setAppearance:) ] ) {
+		[ object setAppearance:[ NSAppearance appearanceNamed:NSAppearanceNameAqua ] ] ;
+	}
+}
+
+- (void)applyReadableFieldColors:(id)field
+{
+	if ( field == nil ) return ;
+	setLegacyAquaAppearance( field ) ;
+	if ( [ field respondsToSelector:@selector(setDrawsBackground:) ] ) [ field setDrawsBackground:YES ] ;
+	if ( [ field respondsToSelector:@selector(setBackgroundColor:) ] ) [ field setBackgroundColor:[ NSColor whiteColor ] ] ;
+	if ( [ field respondsToSelector:@selector(setTextColor:) ] ) [ field setTextColor:[ NSColor blackColor ] ] ;
+	if ( [ field currentEditor ] ) {
+		NSText *editor = [ field currentEditor ] ;
+		setLegacyAquaAppearance( editor ) ;
+		if ( [ editor respondsToSelector:@selector(setBackgroundColor:) ] ) [ (id)editor setBackgroundColor:[ NSColor whiteColor ] ] ;
+		if ( [ editor respondsToSelector:@selector(setTextColor:) ] ) [ (id)editor setTextColor:[ NSColor blackColor ] ] ;
+		if ( [ editor respondsToSelector:@selector(setInsertionPointColor:) ] ) [ (id)editor setInsertionPointColor:[ NSColor blackColor ] ] ;
+	}
+}
+
+- (void)controlTextDidBeginEditing:(NSNotification*)notification
+{
+	id field ;
+
+	field = [ notification object ] ;
+	if ( field == callsignField || field == nameField ) [ self applyReadableFieldColors:field ] ;
+}
+
+- (void)controlTextDidEndEditing:(NSNotification*)notification
+{
+	id field ;
+
+	field = [ notification object ] ;
+	if ( field == callsignField || field == nameField ) [ self applyReadableFieldColors:field ] ;
+}
+
+- (void)refreshEditableFieldColors:(id)field
+{
+	[ self applyReadableFieldColors:field ] ;
+}
+
 //  (Private API)
 - (void)setInterface:(NSControl*)object to:(SEL)selector
 {
@@ -169,6 +213,7 @@ static void convertToUpper( char *string )
 		if ( [ NSBundle loadNibNamed:@"QSO" owner:self ] ) {
 			// loadNib should have set up view
 			if ( view ) {
+				setLegacyAquaAppearance( view ) ;
 				//  create a new TabViewItem for QSO
 				tabItem = [ [ NSTabViewItem alloc ] init ] ;
 				[ tabItem setLabel:NSLocalizedString( @"QSO", nil ) ] ;
@@ -187,6 +232,12 @@ static void convertToUpper( char *string )
 				[ self setUTC ] ;
 				[ self registerAndUpdateTime ] ;
 				[ NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(tick:) userInfo:self repeats:YES ] ;
+				[ self applyReadableFieldColors:callsignField ] ;
+				[ self applyReadableFieldColors:nameField ] ;
+				[ self applyReadableFieldColors:utcDateField ] ;
+				[ self applyReadableFieldColors:utcTimeField ] ;
+				if ( [ callsignField respondsToSelector:@selector(setDelegate:) ] ) [ callsignField setDelegate:self ] ;
+				if ( [ nameField respondsToSelector:@selector(setDelegate:) ] ) [ nameField setDelegate:self ] ;
 
 
 				[ self setInterface:callButton to:@selector(transferCall) ] ;	
@@ -469,6 +520,7 @@ static void convertToUpper( char *string )
 - (void)selectCall 
 {
 	[ callsignField becomeFirstResponder ] ;
+	[ self performSelector:@selector(refreshEditableFieldColors:) withObject:callsignField afterDelay:0.0 ] ;
 	[ callsignField setStringValue:@"" ] ;
 }
 
@@ -476,6 +528,7 @@ static void convertToUpper( char *string )
 - (void)selectName
 {
 	[ nameField becomeFirstResponder ] ;
+	[ self performSelector:@selector(refreshEditableFieldColors:) withObject:nameField afterDelay:0.0 ] ;
 	[ nameField setStringValue:@"" ] ;
 }
 

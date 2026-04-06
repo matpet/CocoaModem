@@ -266,6 +266,7 @@
 	[ self setInt:0 forKey:kAutoConnect ] ;
 	[ self setInt:0 forKey:kEnableNetAudio ] ;		//  v0.64d
 	[ self setInt:0 forKey:kHideWindow ] ;			//  Lite window v0.64e
+	[ self setInt:0 forKey:kAppDarkMode ] ;
 	[ self setInt:0 forKey:kToolTips ] ;
 	[ self setInt:0 forKey:kSlashZeros ] ;
 	[ self setInt:0 forKey:kNoOpenRouter ] ;
@@ -872,9 +873,9 @@
 	[ self setInt:( [ netAudioEnableCheckbox state ] == NSOnState ) ? 1 : 0 forKey:kEnableNetAudio ] ;	
 	//  get hide window checkbox	
 	[ self setInt:( [ hideWindowCheckbox state ] == NSOnState ) ? 1 : 0 forKey:kHideWindow ] ;
-	//	v0.89 keep µH Router closed
+	//	v0.89 keep ï¿½H Router closed
 	[ self setInt:( [ noOpenRouter state ] == NSOnState ) ? 1 : 0 forKey:kNoOpenRouter ] ;
-	//  v0.93b set µH Router to auto routing when cocoaModem quits
+	//  v0.93b set ï¿½H Router to auto routing when cocoaModem quits
 	[ self setInt:( [ quitWithAutoRouting state ] == NSOnState ) ? 1 : 0 forKey:kQuitWithAutoRouting ] ;
 
 	//  retrieve info of each component

@@ -258,7 +258,7 @@
 
 - (void)externalTransmitTextAppended
 {
-	if ( transmitState == YES && transmitBufferCheck == nil ) {
+	if ( transmitState == YES && transmitBufferCheck == nil && transmitStartTimer == nil ) {
 		[ self delayTransmit:nil ] ;
 	}
 }
@@ -518,9 +518,13 @@
 
 - (void)transmissionEnded
 {
-	[ transmitView clearAll ] ;
-	indexOfUntransmittedText = 0 ;
-	indexOfUntransmittedText = [ [ transmitView textStorage ] length ] ;
+	int total ;
+
+	total = (int)[ [ transmitView textStorage ] length ] ;
+	if ( indexOfUntransmittedText >= total ) {
+		[ transmitView clearAll ] ;
+		indexOfUntransmittedText = 0 ;
+	}
 	[ super transmissionEnded ] ;
 }
 
@@ -699,8 +703,8 @@
 		if ( contestBar && alwaysAllowMacro <= 0 ) [ contestBar cancelIfRepeatingIsActive ] ;		// v0.25, v0.33 for first CW repeat macro
 		if ( alwaysAllowMacro > 0 ) alwaysAllowMacro-- ;
 
-		if ( [ textView respondsToSelector:@selector(getRightMouse) ] && [ (ExchangeView*)textView getRightMouse ] ) { // v0.32
-			//  right clicked (contest QSO)
+		if ( [ textView respondsToSelector:@selector(getMouseClick) ] && [ (ExchangeView*)textView getMouseClick ] ) {
+			//  clicked selection for contest/QSO capture
 			if ( newSelectedCharRange.length == 0 ) {
 				if ( [ textView lockFocusIfCanDraw ] ) {
 					//  capture callsign can disable click so -textViewDidChangeSelection can ignore the click

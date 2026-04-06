@@ -24,6 +24,7 @@
 	- (void)setFieldType:(int)type ;
 	- (int)fieldType ;
 	- (void)markAsSelected:(Boolean)state ;
+	- (void)notifyFieldSelected ;
 	- (NSString*)clickedString ;
 	
 	- (void)setIgnoreFirstResponder:(Boolean)state ;

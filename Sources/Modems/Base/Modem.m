@@ -16,6 +16,8 @@
 #import "ModemSource.h"
 #import "Preferences.h"
 #import "PTT.h"
+#import "QSO.h"
+#import "StdManager.h"
 #import "Transceiver.h"
 #import "TextEncoding.h"
 
@@ -587,13 +589,35 @@
 	NSRange range ;
 	NSTextStorage *storage ;
 	NSString *string ;
+	NSEvent *event ;
+	QSO *qso ;
+	int field ;
 	
 	range = [ textView selectedRange ] ;
 	if ( range.length > 0 ) {
 		storage = [ textView textStorage ] ;
 		string = [ [ storage attributedSubstringFromRange:range ] string ] ;
+		event = [ NSApp currentEvent ] ;
+		if ( [ self allowQSOFieldCapture ] && string && [ string length ] > 0 && [ textView respondsToSelector:@selector(getMouseClick) ] && [ (ExchangeView*)textView getMouseClick ] && event && [ event type ] == NSLeftMouseUp && [ event clickCount ] >= 2 ) {
+			qso = [ [ [ manager appObject ] stdManagerObject ] qsoObject ] ;
+			field = ( qso ) ? [ qso activeCaptureField ] : 0 ;
+			if ( field == 'C' ) {
+				[ self upperCase:string into:captured ] ;
+				[ [ NSNotificationCenter defaultCenter ] postNotificationName:@"CapturedCallsign" object:self ] ;
+			}
+			else if ( field == 'N' ) {
+				strncpy( captured, [ string cStringUsingEncoding:kTextEncoding ], 30 ) ;
+				captured[30] = 0 ;
+				[ [ NSNotificationCenter defaultCenter ] postNotificationName:@"CapturedName" object:self ] ;
+			}
+		}
 		[ [ manager appObject ] saveSelectedString:string view:textView ] ;
 	}
+}
+
+- (Boolean)allowQSOFieldCapture
+{
+	return YES ;
 }
 
 //  ---- AppleScript support ----

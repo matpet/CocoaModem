@@ -28,6 +28,11 @@
 		QSO *qso ;
 		MacroInterface *modem ;
 		NSString *macroBuf ;
+		NSString *importMessageKey ;
+		NSString *importTitleKey ;
+		NSString *persistentMessageKey ;
+		NSString *persistentTitleKey ;
+		Preferences *persistentPreferences ;
 		int excessTransmitMacros ;
 	}
 	

@@ -42,6 +42,7 @@
 		
 		NSString *strippedCallsign ;
 		NSString *strippedOp ;
+		int activeField ;
 		
 		struct tm gmt ;
 		struct tm registeredTime ;
@@ -68,12 +69,15 @@
 	//  v1.01a
 	- (void)selectCall ;
 	- (void)selectName ;
+	- (int)activeCaptureField ;
 	
 	//  Applescripts
 	- (void)setCallsign:(NSString*)str ;
 	- (NSString*)callsign ;
 	- (void)setOpName:(NSString*)str ;
 	- (NSString*)opName ;
+	- (void)callsignFieldActivated:(NSNotification*)notification ;
+	- (void)nameFieldActivated:(NSNotification*)notification ;
 	
 	@end
 

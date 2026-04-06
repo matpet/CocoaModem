@@ -51,6 +51,7 @@
 	
 	- (void)setManager:(ContestManager*)inManager ;
 	- (void)setModem:(ContestInterface*)inModem ;
+	- (void)selectDefaultRepeatMacro ;
 	
 	- (void)setupDefaultPreferences:(Preferences*)pref ;
 	- (Boolean)updateFromPlist:(Preferences*)pref ;

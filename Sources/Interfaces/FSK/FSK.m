@@ -11,51 +11,10 @@
 #import "FSKHub.h"
 #import "FSKMenu.h"
 #import "RTTY.h"
-#include <IOKit/IOKitLib.h>
-#include <IOKit/serial/IOSerialKeys.h>
-#include <IOKit/IOBSD.h>
+#import "SerialLineKeyer.h"
 
 #define kSerialRTSMenuPrefix @"External FSK (RTS): "
 #define kSerialDTRMenuPrefix @"External FSK (DTR): "
-
-static int findSerialPorts( NSString **path, NSString **stream, int maxPorts )
-{
-	kern_return_t kernResult ;
-	mach_port_t masterPort ;
-	io_iterator_t serialPortIterator ;
-	io_object_t modemService ;
-	CFMutableDictionaryRef classesToMatch ;
-	CFTypeRef cfString ;
-	int count ;
-
-	kernResult = IOMasterPort( MACH_PORT_NULL, &masterPort ) ;
-	if ( kernResult != KERN_SUCCESS ) return 0 ;
-
-	classesToMatch = IOServiceMatching( kIOSerialBSDServiceValue ) ;
-	if ( classesToMatch == NULL ) return 0 ;
-
-	CFDictionarySetValue( classesToMatch, CFSTR( kIOSerialBSDTypeKey ), CFSTR( kIOSerialBSDAllTypes ) ) ;
-	kernResult = IOServiceGetMatchingServices( masterPort, classesToMatch, &serialPortIterator ) ;
-	if ( kernResult != KERN_SUCCESS ) return 0 ;
-
-	count = 0 ;
-	while ( ( modemService = IOIteratorNext( serialPortIterator ) ) && count < maxPorts ) {
-		cfString = IORegistryEntryCreateCFProperty( modemService, CFSTR( kIOTTYDeviceKey ), kCFAllocatorDefault, 0 ) ;
-		if ( cfString ) {
-			stream[count] = [ (NSString*)cfString retain ] ;
-			CFRelease( cfString ) ;
-			cfString = IORegistryEntryCreateCFProperty( modemService, CFSTR( kIOCalloutDeviceKey ), kCFAllocatorDefault, 0 ) ;
-			if ( cfString ) {
-				path[count] = [ (NSString*)cfString retain ] ;
-				CFRelease( cfString ) ;
-				count++ ;
-			}
-		}
-		IOObjectRelease( modemService ) ;
-	}
-	IOObjectRelease( serialPortIterator ) ;
-	return count ;
-}
 
 @implementation FSK
 
@@ -151,7 +110,7 @@ static int findSerialPorts( NSString **path, NSString **stream, int maxPorts )
 			}
 		}
 
-		serialPorts = findSerialPorts( &path[0], &stream[0], 32 ) ;
+		serialPorts = [ SerialLineKeyer findSerialPorts:&path[0] stream:&stream[0] maxPorts:32 ] ;
 		if ( serialPorts > 0 ) {
 			[ [ menu menu ] addItem:[ NSMenuItem separatorItem ] ] ;
 			interfaces[menuItems].type = kSeparatorType ;

@@ -115,6 +115,11 @@
 	NSRange range ;
 	 
 	macro = [ sheet expandMacro:index modem:self ] ;
+	if ( macro == nil || [ macro length ] == 0 ) return ;
+	if ( fromContest == NO ) {
+		if ( ![ self currentTransmitState ] && ![ self checkIfCanTransmit ] ) return ;
+		[ self sendMessageImmediately ] ;
+	}
 	
 	#ifndef VALIDATE
 	if ( fromContest ) {
@@ -174,19 +179,41 @@
 	currentSheet = 0 ;
 	[ macroSheet[sheet] showMacroSheet:[ controllingTabView window ] modem:self ] ;
 }
+static int MacroIndexFromMatrix( id sender )
+{
+	NSCell *cell ;
+	NSPoint point ;
+	int row, column ;
+
+	if ( sender == nil || ![ sender isKindOfClass:[ NSMatrix class ] ] ) return -1 ;
+	cell = [ sender selectedCell ] ;
+	if ( cell && [ cell tag ] >= 0 ) return (int)[ cell tag ] ;
+	column = (int)[ sender selectedColumn ] ;
+	if ( column >= 0 ) return column ;
+	point = [ sender convertPoint:[ [ NSApp currentEvent ] locationInWindow ] fromView:nil ] ;
+	if ( [ sender getRow:&row column:&column ofCellAtPoint:point ] ) return column ;
+	point = [ sender convertPoint:[ [ sender window ] mouseLocationOutsideOfEventStream ] fromView:nil ] ;
+	if ( [ sender getRow:&row column:&column ofCellAtPoint:point ] ) return column ;
+	return -1 ;
+}
 
 - (IBAction)transmitMessage:(id)sender
 {
 	int index ;
 	NSString *title ;
 	
-	index = [ sender selectedColumn ] ;
+	index = MacroIndexFromMatrix( sender ) ;
+	if ( index < 0 || index > 7 ) {
+		[ [ NSNotificationCenter defaultCenter ] postNotificationName:@"SysBeep" object:nil ] ;
+		return ;
+	}
 	title = [ macroSheet[currentSheet] title:index ] ;
 	if ( title == nil || [ title length ] == 0 ) {
 		[ [ NSNotificationCenter defaultCenter ] postNotificationName:@"SysBeep" object:nil ] ;
 		return ;
 	}
 	[ self executeMacroInSelectedSheet:index ] ;
+	if ( [ sender isKindOfClass:[ NSMatrix class ] ] ) [ sender deselectSelectedCell ] ;
 }
 
 

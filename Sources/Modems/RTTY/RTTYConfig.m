@@ -233,7 +233,6 @@
 	NSString *s ;
 
 	modemRxControl = control ;
-	
 	[ self updateColorsFromPreferences:(Preferences*)pref configSet:&configSet ] ;
 
 	if ( ( ![ modemSource updateFromPlist:pref ] ) && ( [ activeButton state ] == NSOnState ) ) {
@@ -241,7 +240,6 @@
 		//  toggle input attenuator		
 		[ Messages alertWithMessageText:NSLocalizedString( @"RTTY settings needs to be reselected", nil ) informativeText:NSLocalizedString( @"Device removed", nil ) ] ;
 	}
-	
 	//  set up active button state
 	state = ( [ pref intValueForKey:configSet.active ] == 1 ) ? NSOnState : NSOffState ;
 	[ activeButton setState:state ] ;

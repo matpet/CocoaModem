@@ -280,6 +280,7 @@
 	float r, g, b ;
 	
 	color = [ prefs objectForKey:key ] ;		//  should be an NSArray
+	if ( color == nil || ![ color isKindOfClass:[ NSArray class ] ] || [ color count ] < 3 ) return [ [ NSColor blackColor ] retain ] ;
 	r = [ [ color objectAtIndex:0 ] floatValue ] ;
 	g = [ [ color objectAtIndex:1 ] floatValue ] ;
 	b = [ [ color objectAtIndex:2 ] floatValue ] ;
@@ -291,9 +292,14 @@
 - (void)setColor:(NSColor*)color forKey:(NSString*)key
 {
 	NSNumber *r, *g, *b ;
+	NSColor *rgbColor ;
 	float red, green, blue, alpha ;
 	
-	[ color getRed:&red green:&green blue:&blue alpha:&alpha ] ;
+	if ( color == nil || key == nil ) return ;
+	rgbColor = [ color colorUsingColorSpaceName:NSCalibratedRGBColorSpace ] ;
+	if ( rgbColor == nil ) rgbColor = [ color colorUsingColorSpace:[ NSColorSpace genericRGBColorSpace ] ] ;
+	if ( rgbColor == nil ) return ;
+	[ rgbColor getRed:&red green:&green blue:&blue alpha:&alpha ] ;
 	r = [ NSNumber numberWithFloat:red ] ;
 	g = [ NSNumber numberWithFloat:green ] ;
 	b = [ NSNumber numberWithFloat:blue ] ;

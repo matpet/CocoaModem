@@ -155,7 +155,13 @@
 	index = [ menu indexOfSelectedItem ] ;
 	if ( index >= 0 ) {
 		interface = interfaces[ index ] ;
-		if ( interface != nil ) [ interface setPTTState:state ] ;
+		if ( interface != nil ) {
+			if ( state == YES && [ interface connected ] == NO && index != kVOXIndex ) {
+				[ hub missingPTT:index name:[ menu titleOfSelectedItem ] ] ;
+				return ;
+			}
+			[ interface setPTTState:state ] ;
+		}
 	}
 }
 

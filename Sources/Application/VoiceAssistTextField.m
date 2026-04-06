@@ -10,7 +10,72 @@
 #import "Application.h"
 #import "AppDelegate.h"
 
+static NSColor *fieldBackgroundColor( void )
+{
+	return [ NSColor textBackgroundColor ] ;
+}
+
+static NSColor *fieldTextColor( void )
+{
+	return [ NSColor textColor ] ;
+}
+
+static void setVoiceAssistEditorColors( NSText *editor )
+{
+	NSDictionary *attributes ;
+
+	if ( editor == nil ) return ;
+	if ( [ editor respondsToSelector:@selector(setTextColor:) ] ) [ (id)editor setTextColor:fieldTextColor() ] ;
+	if ( [ editor respondsToSelector:@selector(setInsertionPointColor:) ] ) [ (id)editor setInsertionPointColor:fieldTextColor() ] ;
+	attributes = @{
+		NSForegroundColorAttributeName:fieldTextColor(),
+		NSBackgroundColorAttributeName:[ NSColor selectedTextBackgroundColor ]
+	} ;
+	if ( [ editor respondsToSelector:@selector(setSelectedTextAttributes:) ] ) [ (id)editor setSelectedTextAttributes:attributes ] ;
+}
+
+static void setVoiceAssistFieldColors( NSTextField *field )
+{
+	if ( field == nil ) return ;
+	[ field setDrawsBackground:YES ] ;
+	[ field setBackgroundColor:fieldBackgroundColor() ] ;
+	[ field setTextColor:fieldTextColor() ] ;
+	if ( [ field currentEditor ] ) setVoiceAssistEditorColors( [ field currentEditor ] ) ;
+}
+
 @implementation VoiceAssistTextField
+
+- (void)awakeFromNib
+{
+	setVoiceAssistFieldColors( self ) ;
+	[ [ NSNotificationCenter defaultCenter ] addObserver:self selector:@selector(textDidBeginEditing:) name:NSTextDidBeginEditingNotification object:self ] ;
+}
+
+- (BOOL)becomeFirstResponder
+{
+	if ( [ super becomeFirstResponder ] ) {
+		setVoiceAssistFieldColors( self ) ;
+		return YES ;
+	}
+	return NO ;
+}
+
+- (void)viewDidMoveToWindow
+{
+	[ super viewDidMoveToWindow ] ;
+	setVoiceAssistFieldColors( self ) ;
+}
+
+- (void)textDidBeginEditing:(NSNotification*)notification
+{
+	if ( [ notification object ] == self ) setVoiceAssistFieldColors( self ) ;
+}
+
+- (void)dealloc
+{
+	[ [ NSNotificationCenter defaultCenter ] removeObserver:self ] ;
+	[ super dealloc ] ;
+}
 
 
 //  voice character

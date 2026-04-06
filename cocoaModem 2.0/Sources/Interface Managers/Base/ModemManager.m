@@ -294,6 +294,11 @@ Boolean gTestDump = NO ;
 	return application ;
 }
 
+- (Preferences*)preferencesObject
+{
+	return preferences ;
+}
+
 //  return the window (textured or untextured) which is in use
 - (NSWindow*)windowObject
 {

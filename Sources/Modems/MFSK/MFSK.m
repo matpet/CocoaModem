@@ -709,10 +709,13 @@
 
 - (void)changeTransmitStateTo:(Boolean)state
 {
+	Boolean wasTransmit ;
+
+	wasTransmit = transmitState ;
+	if ( state == YES && wasTransmit == NO ) [ self ptt:YES ] ;
 	transmitState = [ config turnOnTransmission:state button:transmitButton modulator:modulator ] ;
 	
 	if ( transmitState == YES ) {
-		[ self ptt:YES ] ;
 		[ self changeTransmitLight:1 ] ;
 		[ [ transmitView window ] makeFirstResponder:transmitView ] ;
 		if ( timeout ) [ timeout invalidate ] ;
@@ -725,6 +728,7 @@
 		[ NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(delayTransmit:) userInfo:self repeats:NO ] ;
 	}
 	else {
+		if ( state == YES && wasTransmit == NO ) [ self ptt:NO ] ;
 		[ self ptt:NO ] ;
 		[ self changeTransmitLight:0 ] ;
 		if ( timeout ) [ timeout invalidate ] ;

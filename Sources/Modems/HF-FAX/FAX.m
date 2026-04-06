@@ -30,6 +30,11 @@
 
 //  FAX : Modem : NSObject
 
+- (Boolean)allowQSOFieldCapture
+{
+	return NO ;
+}
+
 - (id)initIntoTabView:(NSTabView*)tabview manager:(ModemManager*)mgr
 {
 	[ mgr showSplash:@"Creating FAX Modem" ] ;

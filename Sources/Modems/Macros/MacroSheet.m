@@ -30,6 +30,9 @@
 		macroBuf = @"" ;
 		userInfo = nil ;
 		qso = nil ;
+		importMessageKey = importTitleKey = nil ;
+		persistentMessageKey = persistentTitleKey = nil ;
+		persistentPreferences = nil ;
 		excessTransmitMacros = 0 ;
 	}
 	return self ;
@@ -62,6 +65,14 @@
 - (void)setModem:(MacroInterface*)inModem
 {
 	modem = inModem ;
+}
+
+- (void)rememberPersistentPreferences:(Preferences*)pref messageKey:(NSString*)messageKey titleKey:(NSString*)titleKey
+{
+	if ( pref == nil || messageKey == nil || titleKey == nil ) return ;
+	persistentPreferences = pref ;
+	persistentMessageKey = messageKey ;
+	persistentTitleKey = titleKey ;
 }
 
 //  macros storage (in Plist) strings are separated by ~ characters
@@ -422,6 +433,12 @@ NSString *nextMsg( NSString **full )
 - (void)updateFromPlist:(Preferences*)pref messageKey:(NSString*)messageKey titleKey:(NSString*)titleKey
 {
 	NSObject *msgObject, *titleObject ;
+
+	importMessageKey = messageKey ;
+	importTitleKey = titleKey ;
+	if ( ![ messageKey isEqualToString:kMessages ] || ![ titleKey isEqualToString:kMessageTitles ] ) {
+		[ self rememberPersistentPreferences:pref messageKey:messageKey titleKey:titleKey ] ;
+	}
 	
 	msgObject = [ pref objectForKey:messageKey ] ;
 	titleObject = [ pref objectForKey:titleKey ] ;
@@ -433,6 +450,12 @@ NSString *nextMsg( NSString **full )
 - (void)retrieveForPlist:(Preferences*)pref messageKey:(NSString*)messageKey titleKey:(NSString*)titleKey 
 {
 	NSObject *object ;
+
+	importMessageKey = messageKey ;
+	importTitleKey = titleKey ;
+	if ( ![ messageKey isEqualToString:kMessages ] || ![ titleKey isEqualToString:kMessageTitles ] ) {
+		[ self rememberPersistentPreferences:pref messageKey:messageKey titleKey:titleKey ] ;
+	}
 	
 	object = [ self getMessageObject ] ;
 	if ( [ object  isKindOfClass:[ NSString class ] ] ) [ pref setString:(NSString*)object forKey:messageKey ] ; else [ pref setArray:(NSArray*)object forKey:messageKey ] ;
@@ -470,8 +493,19 @@ NSString *nextMsg( NSString **full )
 		path = [ open filenames ][0] ;
 		prefs = [ [ Preferences alloc ] initWithPath:path ] ;
 		if ( prefs ) {
+			Preferences *livePrefs ;
+			Application *application ;
+
 			[ prefs fetchPlist:NO ] ;
 			[ self updateFromPlist:prefs messageKey:kMessages titleKey:kMessageTitles ] ;
+			application = [ [ NSApp delegate ] application ] ;
+			livePrefs = persistentPreferences ;
+			if ( livePrefs == nil && modem ) livePrefs = [ [ modem managerObject ] preferencesObject ] ;
+			if ( livePrefs == nil && application ) livePrefs = [ [ application stdManagerObject ] preferencesObject ] ;
+			if ( livePrefs && persistentMessageKey && persistentTitleKey ) {
+				[ self retrieveForPlist:livePrefs messageKey:persistentMessageKey titleKey:persistentTitleKey ] ;
+				[ livePrefs savePlist ] ;
+			}
 			[ prefs release ] ;
 		}
 	}
