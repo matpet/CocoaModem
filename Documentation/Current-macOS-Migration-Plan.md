@@ -14,6 +14,7 @@ The main positive sign is that the app target was already partially migrated to 
 - Full `xcodebuild` validation was not possible in this environment because the machine is currently pointed at Command Line Tools instead of a full Xcode installation.
 - The source tree contains direct CoreAudio HAL usage, legacy file and dialog APIs, Carbon includes, and older AudioUnit component APIs.
 - The app includes hardware integration code for serial/PTT and microHAM router/keyer control, which will need runtime verification on current macOS.
+- The original user documentation describes the plain RTTY panel as deprecated; Wideband RTTY and Dual RTTY should be treated as the supported RTTY paths for modernization and runtime verification.
 
 ## Highest-Risk Areas
 
