@@ -14,6 +14,7 @@
 	@interface MFSKIndicator : NSImageView {
 		NSImage *image ;
 		NSBitmapImageRep *bitmap ;
+		unsigned char *bitmaps[5] ;
 		int width, height, size, depth, rowBytes ;
 		float saved[512] ;
 		NSThread *thread ;
@@ -21,6 +22,7 @@
 		UInt32 *pixel ;
 		float scale, exponent ;
 		int cycle ;
+		Boolean pendingMainThreadDraw ;
 	}
 
 	- (void)setScale:(float)scale ;

@@ -92,6 +92,9 @@ enum LockCondition {
 		[ txFrequencyField setStringValue:@"" ] ;
 		[ txFrequencyField setAction:@selector( txFieldChanged ) ] ;
 		[ txFrequencyField setTarget:self ] ;
+		//  IMD is a receive-quality indicator only; never allow in-place editing.
+		[ IMDField setEditable:NO ] ;
+		[ IMDField setSelectable:YES ] ;
 		//  tx light
 		[ self setTransmitLightState:TxOff ] ;
 		return YES ;
@@ -354,9 +357,27 @@ enum LockCondition {
 	control = inControl ;
 }
 
+- (void)setFrequencyFieldInMainThread:(NSArray*)arguments
+{
+	NSTextField *field ;
+	NSString *string ;
+
+	field = [ arguments objectAtIndex:0 ] ;
+	string = [ arguments objectAtIndex:1 ] ;
+	[ field setStringValue:string ] ;
+}
+
 - (void)displayFrequency:(float)freq on:(NSTextField*)field
 {
-	[ field setStringValue:[ NSString stringWithFormat:@"%.1f", freq ] ] ;
+	NSString *string ;
+
+	string = [ NSString stringWithFormat:@"%.1f", freq ] ;
+	if ( [ NSThread isMainThread ] ) {
+		[ field setStringValue:string ] ;
+	}
+	else {
+		[ self performSelectorOnMainThread:@selector(setFrequencyFieldInMainThread:) withObject:[ NSArray arrayWithObjects:field, string, nil ] waitUntilDone:NO ] ;
+	}
 }
 
 //  called from NewPSKDemodulator when AFC updates
@@ -374,7 +395,7 @@ enum LockCondition {
 	p = freq*10 ;
 	freq = p*0.1 ;
 	if ( freq != displayedRxFrequency ) {
-	if ( [ rxFrequencyField floatValue ] != freq ) [ self displayFrequency:freq on:rxFrequencyField ] ;
+		[ self displayFrequency:freq on:rxFrequencyField ] ;
 		[ (PSK*)client frequencyUpdatedTo:tone receiver:uniqueID ] ;
 	}
 	displayedRxFrequency = freq ;
@@ -403,6 +424,7 @@ enum LockCondition {
 - (void)setTransmitLightState:(int)state
 {
 	NSColor *color ;
+	NSNumber *selectorValue ;
 	
 	indicatorState = state ;
 	if ( ![ self canTransmit ] ) color = txOff ;
@@ -423,7 +445,13 @@ enum LockCondition {
 			break ;
 		}
 	}
-	[ transmitLight setBackgroundColor:color ] ;
+	if ( [ NSThread isMainThread ] ) {
+		[ transmitLight setBackgroundColor:color ] ;
+	}
+	else {
+		selectorValue = [ NSNumber numberWithInt:state ] ;
+		[ self performSelectorOnMainThread:@selector(setTransmitLightState:) withObject:selectorValue waitUntilDone:NO ] ;
+	}
 }
 
 //  callback from VCO
@@ -841,25 +869,34 @@ enum LockCondition {
 //		snr < 0 = clear
 //		snr > imd noise limited
 //		snr < imd good reading
+- (void)setIMDStringInMainThread:(NSString*)string
+{
+	[ IMDField setStringValue:string ] ;
+}
+
 - (void)updateIMD:(float)imd snr:(float)snr
 {
 	int n ;
+	NSString *string ;
 	
 	if ( snr < 0 ) {
-		[ IMDField setStringValue:@"" ] ;	// clear IMD field
+		string = @"" ;	// clear IMD field
+		[ self performSelectorOnMainThread:@selector(setIMDStringInMainThread:) withObject:string waitUntilDone:NO ] ;
 		return ;
 	}
 	if ( imd < -0.1 ) {
-		[ IMDField setStringValue:@"NL" ] ;					//  "noise limited"
+		string = @"NL" ;					//  "noise limited"
+		[ self performSelectorOnMainThread:@selector(setIMDStringInMainThread:) withObject:string waitUntilDone:NO ] ;
 		return ;
 	}
 	n = 10*log10( imd ) - 0.5 ;		//  quantize to 1 dB steps
 	if ( fabs( snr ) > fabs( imd ) ) {
-		[ IMDField setStringValue:[ NSString stringWithFormat:@"%d", n ] ] ;
+		string = [ NSString stringWithFormat:@"%d", n ] ;
 	}
 	else {
-		[ IMDField setStringValue:[ NSString stringWithFormat:@"%d*", n ] ] ;
+		string = [ NSString stringWithFormat:@"%d*", n ] ;
 	}
+	[ self performSelectorOnMainThread:@selector(setIMDStringInMainThread:) withObject:string waitUntilDone:NO ] ;
 }
 
 //  delegate to CMPSKDemodulator

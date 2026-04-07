@@ -12,22 +12,57 @@
 
 @implementation FrequencyIndicator
 
+- (void)drawWaterfallInRect:(NSRect)rect
+{
+	CGColorSpaceRef colorSpace ;
+	CGContextRef context ;
+	CGDataProviderRef provider ;
+	CGImageRef imageRef ;
+
+	if ( bitmaps[0] == nil || width <= 0 || height <= 0 ) return ;
+
+	colorSpace = CGColorSpaceCreateDeviceRGB() ;
+	if ( colorSpace == nil ) return ;
+
+	provider = CGDataProviderCreateWithData( nil, bitmaps[0], rowBytes*height, nil ) ;
+	if ( provider == nil ) {
+		CGColorSpaceRelease( colorSpace ) ;
+		return ;
+	}
+
+	imageRef = CGImageCreate( width, height, 8, 32, rowBytes, colorSpace, kCGBitmapByteOrder32Big | kCGImageAlphaLast, provider, nil, NO, kCGRenderingIntentDefault ) ;
+	if ( imageRef ) {
+		context = [ [ NSGraphicsContext currentContext ] CGContext ] ;
+		CGContextSaveGState( context ) ;
+		CGContextTranslateCTM( context, rect.origin.x, rect.origin.y + rect.size.height ) ;
+		CGContextScaleCTM( context, rect.size.width/width, -rect.size.height/height ) ;
+		CGContextDrawImage( context, CGRectMake( 0, 0, width, height ), imageRef ) ;
+		CGContextRestoreGState( context ) ;
+		CGImageRelease( imageRef ) ;
+	}
+	CGDataProviderRelease( provider ) ;
+	CGColorSpaceRelease( colorSpace ) ;
+}
+
 - (void)awakeFromNib
 {
 	NSSize bsize ;
-	int i, lsize, transformSize ;
+	int i, lsize ;
 	UInt32 bg ;
 		
 	//  check window depth
 	depth = NSBitsPerPixelFromDepth( [ NSWindow defaultDepthLimit ] ) ;  //  m = 24, t = 12, 256 = 8
+	if ( depth < 24 ) depth = 32 ;
 
 	sideband = NO ;
 
 	bsize = [ self bounds ].size ;
 	width = bsize.width ;  
 	height = bsize.height ;  
+	if ( width > 256 ) width = 256 ;	// local spectrum buffer limit
 	
-	transformSize = 256 ;
+	pendingMainThreadDraw = NO ;
+	bitmaps[0] = bitmaps[1] = bitmaps[2] = bitmaps[3] = bitmaps[4] = nil ;
 
 	thread = [ NSThread currentThread ] ;
 	[ self setRange:60.0 ] ;
@@ -37,7 +72,8 @@
 		//  Uses 32 bit/pixel for millions of colors mode, all components of a pixel can then be written with a single int write.
 		rowBytes = width*4 ;
 		lsize = size = rowBytes*height/4 ;
-		bitmap = ( NSBitmapImageRep* )[ [ NSBitmapImageRep alloc ] initWithBitmapDataPlanes: NULL 
+		bitmaps[0] = ( unsigned char* )malloc( rowBytes*height ) ;
+		bitmap = ( NSBitmapImageRep* )[ [ NSBitmapImageRep alloc ] initWithBitmapDataPlanes:bitmaps 
 					pixelsWide:width pixelsHigh:height
 					bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES isPlanar:NO
 					colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:rowBytes bitsPerPixel:32 ] ;
@@ -47,22 +83,32 @@
 		rowBytes = ( ( width*2 + 3 )/4 ) * 4 ;
 		lsize = ( size = rowBytes*height/2 )/2 ;
 		//  Uses 16 bit/pixel for thousands of colors mode, all components of a pixel can then be written with a single short write.
-		bitmap = ( NSBitmapImageRep* )[ [ NSBitmapImageRep alloc ] initWithBitmapDataPlanes: NULL 
+		bitmaps[0] = ( unsigned char* )malloc( rowBytes*height ) ;
+		bitmap = ( NSBitmapImageRep* )[ [ NSBitmapImageRep alloc ] initWithBitmapDataPlanes:bitmaps 
 					pixelsWide:width pixelsHigh:height
 					bitsPerSample:4 samplesPerPixel:4 hasAlpha:YES isPlanar:NO
 					colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:rowBytes bitsPerPixel:16 ] ;
 		
 	}
 	
-	if ( bitmap ) {
+	if ( bitmap && bitmaps[0] ) {
 		[ bitmap retain ] ;
-		pixel = ( UInt32* )[ bitmap bitmapData ] ;
+		pixel = ( UInt32* )bitmaps[0] ;
 		for ( i = 0; i < lsize; i++ ) pixel[i] = bg ;
 		image = [ [ NSImage alloc ] init ] ;
 		[ image addRepresentation:bitmap ] ;
 		[ self setImageScaling:NSScaleNone ] ;
 		[ self setImage:image ] ;
 	}
+}
+
+- (void)dealloc
+{
+	if ( image && bitmap ) [ image removeRepresentation:bitmap ] ;
+	if ( bitmap ) [ bitmap release ] ;
+	if ( image ) [ image release ] ;
+	if ( bitmaps[0] ) free( bitmaps[0] ) ;
+	[ super dealloc ] ;
 }
 
 - (BOOL)isOpaque
@@ -81,7 +127,13 @@
 	NSBezierPath *line ;
 	float p ;
 	
-	[ super drawRect:rect ] ;
+	if ( bitmap ) {
+		[ self drawWaterfallInRect:[ self bounds ] ] ;
+	}
+	else {
+		[ [ NSColor blackColor ] set ] ;
+		NSRectFill( [ self bounds ] ) ;
+	}
 	line = [ NSBezierPath bezierPath ] ;
 	[ line setLineWidth:1 ] ;
 	p = width/2 - 15.5 ;
@@ -166,38 +218,56 @@
 
 - (void)displayInMainThread
 {
-	//[ self setNeedsDisplay:YES ] ;
-	[ self display ] ;						//  v0.73
+	pendingMainThreadDraw = NO ;
+	[ self setNeedsDisplay:YES ] ;
+}
+
+- (void)requestDisplayInMainThread
+{
+	if ( pendingMainThreadDraw ) return ;
+	pendingMainThreadDraw = YES ;
+	[ self performSelectorOnMainThread:@selector(displayInMainThread) withObject:nil waitUntilDone:NO ] ;
 }
 
 // v0.57 - n changed to 1024 for 1000s/sec sampling rate
 - (void)newSpectrum:(DSPSplitComplex*)spec size:(int)n
 {
-	float g[256 /* at least width */], p, q, *re, *im, norm, min, max ;  // needs to be larger than width!
+	float g[256], p, q, power, *re, *im, min, max, norm ;
 	char *src, *insert ;
 	int i, m, index ;
 	UInt32 *line ;
 	UInt16 *sline ;
 	
 	if ( n != 1024 ) return ;
+	if ( width < 4 || width > 256 ) return ;
 	
 	re = spec->realp ;
 	im = spec->imagp ;
 	m = width/2 ;			//  0.32 bug fix (was 192)
+	g[0] = 0 ;
 	for ( i = 0; i < m; i++ ) {
 		p = re[i] ;
 		q = im[i] ;
-		g[width/2+i] = p*p + q*q ;
+		power = p*p + q*q ;
+		if ( power != power || power < 0 ) power = 0 ;
+		g[width/2+i] = power ;
 	}
 	for ( i = 1; i <= m; i++ ) {
 		p = re[1024-i] ;
 		q = im[1024-i] ;
-		g[width/2-i] = p*p + q*q ;
+		power = p*p + q*q ;
+		if ( power != power || power < 0 ) power = 0 ;
+		g[width/2-i] = power ;
 	}
 	min = max = g[0] ;
-	for ( i = 1; i < width; i++ ) if ( g[i] > max ) max = g[i] ; else if ( g[i] < min ) min = g[i] ;
+	for ( i = 1; i < width; i++ ) {
+		if ( g[i] > max ) max = g[i] ;
+		else if ( g[i] < min ) min = g[i] ;
+	}
 	norm = 1.0/( max - min + .001 ) ;
-	for ( i = 0; i < width; i++ ) g[i] = ( g[i]-min )*norm ;
+	for ( i = 0; i < width; i++ ) {
+		g[i] = ( g[i] - min )*norm ;
+	}
 	
 	src = ( ( char* )pixel ) + rowBytes ;
 	memcpy( pixel, src, rowBytes*( height-1 ) ) ;
@@ -239,7 +309,7 @@
 			}
 		}
 	}
-	[ self performSelectorOnMainThread:@selector(displayInMainThread) withObject:nil waitUntilDone:NO ] ;
+	[ self requestDisplayInMainThread ] ;
 }
 
 - (void)clear
@@ -264,7 +334,7 @@
 		memcpy( s, pixel, rowBytes ) ;
 		s += rowBytes ;
 	}
-	[ self performSelectorOnMainThread:@selector(displayInMainThread) withObject:nil waitUntilDone:NO ] ;
+	[ self requestDisplayInMainThread ] ;
 }
 
 

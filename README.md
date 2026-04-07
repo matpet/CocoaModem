@@ -43,4 +43,4 @@ See ATTRIBUTION.md for project provenance and attribution notes.
 - Original cocoaModem created by W7AY, Kok Chen.
 - Repository updated to restore compatibility with current macOS releases.
 - Current modernization pass includes universal Apple Silicon and Intel builds, Intel launch fixes, and native system appearance behavior on modern macOS.
-- 2.1rc2 adds external RTTY/CW operational fixes, contest workflow improvements, and a fldigi-compatible XML-RPC interface for RumLogNG contest control.
+- 2.1rc3 adds PSK and MFSK indicator rendering fixes, macro transmit handoff improvements, Hellschreiber transmit fixes, plus the earlier external RTTY/CW operational fixes, contest workflow improvements, and fldigi-compatible XML-RPC control for RumLogNG.

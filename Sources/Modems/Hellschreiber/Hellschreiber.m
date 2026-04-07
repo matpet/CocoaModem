@@ -351,6 +351,14 @@
 	[ transmitCountLock unlock ] ;
 }
 
+- (void)externalTransmitTextAppended
+{
+	if ( transmitState == YES ) {
+		if ( transmitBufferCheck ) [ self checkTransmitBuffer:nil ] ;
+		else [ self delayTransmit:nil ] ;
+	}
+}
+
 /* local */
 //  this gets periodically called
 - (void)timedOut:(NSTimer*)timer

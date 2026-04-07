@@ -17,8 +17,11 @@
 - (Boolean)executeButtonMacro:(char*)str modem:(MacroInterface*)macroInterface
 {
 	if ( str[0] == 'r' && str[1] == 'x' ) {
-		//  add to end of stream
-		excessTransmitMacros-- ;
+		//  add to end of stream and balance any earlier %[tx] in this macro
+		if ( excessTransmitMacros > 0 ) {
+			[ self appendToMessageBuf:[ NSString stringWithFormat:@"%c", 'Z'-'A'+1 ] ] ;
+			excessTransmitMacros-- ;
+		}
 		[ self appendToMessageBuf:[ NSString stringWithFormat:@"%c", 5 /*^E*/ ] ] ;
 		return YES ;
 	}

@@ -923,6 +923,15 @@ static int kState[] = { NSOffState, NSOnState } ;
 	[ transmitCountLock unlock ] ;
 }
 
+- (void)externalTransmitTextAppended
+{
+	unmarkedTextLength = (int)[ [ transmitView textStorage ] length ] ;
+	if ( transmitState == YES ) {
+		if ( transmitBufferCheck ) [ self checkTransmitBuffer:nil ] ;
+		else [ self delayTransmit:nil ] ;
+	}
+}
+
 /* local */
 //  this gets periodically called
 - (void)timedOut:(NSTimer*)timer

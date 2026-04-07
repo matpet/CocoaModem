@@ -12,6 +12,42 @@
 
 @implementation MFSKIndicator
 
+- (void)drawWaterfallInRect:(NSRect)rect
+{
+	CGColorSpaceRef colorSpace ;
+	CGContextRef context ;
+	CGDataProviderRef provider ;
+	CGImageRef imageRef ;
+
+	if ( bitmaps[0] == nil || width <= 0 || height <= 0 ) return ;
+	if ( depth < 24 ) {
+		[ bitmap drawInRect:rect ] ;
+		return ;
+	}
+
+	colorSpace = CGColorSpaceCreateDeviceRGB() ;
+	if ( colorSpace == nil ) return ;
+
+	provider = CGDataProviderCreateWithData( nil, bitmaps[0], rowBytes*height, nil ) ;
+	if ( provider == nil ) {
+		CGColorSpaceRelease( colorSpace ) ;
+		return ;
+	}
+
+	imageRef = CGImageCreate( width, height, 8, 32, rowBytes, colorSpace, kCGBitmapByteOrder32Big | kCGImageAlphaLast, provider, nil, NO, kCGRenderingIntentDefault ) ;
+	if ( imageRef ) {
+		context = [ [ NSGraphicsContext currentContext ] CGContext ] ;
+		CGContextSaveGState( context ) ;
+		CGContextTranslateCTM( context, rect.origin.x, rect.origin.y + rect.size.height ) ;
+		CGContextScaleCTM( context, rect.size.width/width, -rect.size.height/height ) ;
+		CGContextDrawImage( context, CGRectMake( 0, 0, width, height ), imageRef ) ;
+		CGContextRestoreGState( context ) ;
+		CGImageRelease( imageRef ) ;
+	}
+	CGDataProviderRelease( provider ) ;
+	CGColorSpaceRelease( colorSpace ) ;
+}
+
 - (void)awakeFromNib
 {
 	NSSize bsize ;
@@ -23,6 +59,8 @@
 	if ( depth < 24 ) depth = 32 ;
 
 	cycle = 0 ;
+	pendingMainThreadDraw = NO ;
+	bitmaps[0] = bitmaps[1] = bitmaps[2] = bitmaps[3] = bitmaps[4] = nil ;
 
 	bsize = [ self bounds ].size ;
 	width = bsize.width ;  
@@ -37,7 +75,8 @@
 		//  Uses 32 bit/pixel for millions of colors mode, all components of a pixel can then be written with a single int write.
 		rowBytes = width*4 ;
 		lsize = size = rowBytes*height/4 ;
-		bitmap = ( NSBitmapImageRep* )[ [ NSBitmapImageRep alloc ] initWithBitmapDataPlanes: NULL 
+		bitmaps[0] = ( unsigned char* )malloc( rowBytes*height ) ;
+		bitmap = ( NSBitmapImageRep* )[ [ NSBitmapImageRep alloc ] initWithBitmapDataPlanes:bitmaps 
 					pixelsWide:width pixelsHigh:height
 					bitsPerSample:8 samplesPerPixel:4 hasAlpha:YES isPlanar:NO
 					colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:rowBytes bitsPerPixel:32 ] ;
@@ -47,16 +86,17 @@
 		rowBytes = ( ( width*2 + 3 )/4 ) * 4 ;
 		lsize = ( size = rowBytes*height/2 )/2 ;
 		//  Uses 16 bit/pixel for thousands of colors mode, all components of a pixel can then be written with a single short write.
-		bitmap = ( NSBitmapImageRep* )[ [ NSBitmapImageRep alloc ] initWithBitmapDataPlanes: NULL 
+		bitmaps[0] = ( unsigned char* )malloc( rowBytes*height ) ;
+		bitmap = ( NSBitmapImageRep* )[ [ NSBitmapImageRep alloc ] initWithBitmapDataPlanes:bitmaps 
 					pixelsWide:width pixelsHigh:height
 					bitsPerSample:4 samplesPerPixel:4 hasAlpha:YES isPlanar:NO
 					colorSpaceName:NSDeviceRGBColorSpace bytesPerRow:rowBytes bitsPerPixel:16 ] ;
 		
 	}
 	
-	if ( bitmap ) {
+	if ( bitmap && bitmaps[0] ) {
 		[ bitmap retain ] ;
-		pixel = ( UInt32* )[ bitmap bitmapData ] ;
+		pixel = ( UInt32* )bitmaps[0] ;
 		for ( i = 0; i < lsize; i++ ) pixel[i] = bg ;
 		image = [ [ NSImage alloc ] init ] ;
 		[ image addRepresentation:bitmap ] ;
@@ -65,9 +105,27 @@
 	}
 }
 
+- (void)dealloc
+{
+	if ( image && bitmap ) [ image removeRepresentation:bitmap ] ;
+	if ( bitmap ) [ bitmap release ] ;
+	if ( image ) [ image release ] ;
+	if ( bitmaps[0] ) free( bitmaps[0] ) ;
+	[ super dealloc ] ;
+}
+
 - (BOOL)isOpaque
 {
 	return YES ;
+}
+
+- (void)drawRect:(NSRect)rect
+{
+	if ( bitmap ) [ self drawWaterfallInRect:[ self bounds ] ] ;
+	else {
+		[ [ NSColor blackColor ] set ] ;
+		NSRectFill( [ self bounds ] ) ;
+	}
 }
 
 - (void)setScale:(float)f
@@ -122,6 +180,19 @@
 - (int)plotValue:(float)sample
 {
 	return pow( sample, exponent ) * 20000.0 ;
+}
+
+- (void)displayInMainThread
+{
+	pendingMainThreadDraw = NO ;
+	[ self setNeedsDisplay:YES ] ;
+}
+
+- (void)requestDisplayInMainThread
+{
+	if ( pendingMainThreadDraw ) return ;
+	pendingMainThreadDraw = YES ;
+	[ self performSelectorOnMainThread:@selector(displayInMainThread) withObject:nil waitUntilDone:NO ] ;
 }
 
 - (void)newSpectrum:(float*)spec width:(int)slots
@@ -184,7 +255,7 @@
 			sline[i] = intensity[index] ;
 		}
 	}
-	[ self performSelectorOnMainThread:@selector(display) withObject:nil waitUntilDone:NO ] ;		//  v0.73 -- was displayInMainThread
+	[ self requestDisplayInMainThread ] ;
 }
 
 // accept a 384 point power spectrum and display it
@@ -221,7 +292,7 @@
 		memcpy( s, pixel, rowBytes ) ;
 		s += rowBytes ;
 	}
-	[ self performSelectorOnMainThread:@selector(display) withObject:nil waitUntilDone:NO ] ;
+	[ self requestDisplayInMainThread ] ;
 }
 
 

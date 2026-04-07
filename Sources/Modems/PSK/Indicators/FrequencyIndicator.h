@@ -14,12 +14,14 @@
 	@interface FrequencyIndicator : NSImageView {
 		NSImage *image ;
 		NSBitmapImageRep *bitmap ;
+		unsigned char *bitmaps[5] ;
 		int width, height, size, depth, rowBytes ;
 		NSThread *thread ;
 		UInt32 intensity[20000] ;
 		UInt32 *pixel ;
 		float range, exponent ;
 		Boolean sideband ;			// NO = LSB
+		Boolean pendingMainThreadDraw ;
 	}
 
 	- (void)setRange:(float)range ;

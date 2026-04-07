@@ -10,6 +10,19 @@
 #import "VCO8k.h"
 #include <math.h>
 
+#define DEBUG_PSK_IMD 0
+#define IMD_PRIMARY_BIN_MIN 5
+#define IMD_PRIMARY_BIN_MAX 11
+#define IMD_BIN_SPACING_MIN 13
+#define IMD_BIN_SPACING_MAX 19
+
+#if DEBUG_PSK_IMD
+static int imdRejectPrimaryCount = 0 ;
+static int imdRejectSpacingCount = 0 ;
+static int imdWaitingForLockCount = 0 ;
+static int imdEstimateCount = 0 ;
+#endif
+
 @implementation PSKDemodulator
 
 - (void)clearImd
@@ -22,8 +35,9 @@
 	previousI = previousQ = 0 ;
 	imdMux = 0 ;
 	b = &imdRingBuffer[0] ;
-	for ( i = 0; i < 64; i++ ) {
+	for ( i = 0; i < 256; i++ ) {
 		b->imd = b->carrier = b->noise = 0 ;
+		b++ ;
 	}
 	[ self updateIMD:0 snr:-1.0 ] ;
 }
@@ -221,7 +235,12 @@ static float ibuf[256], qbuf[256], bbuf[256] ;
 		}
 	}
 	
-	if ( index10 < 7 || index10 > 9 ) return NO ;	//  ignore, too far off tuned
+	if ( index10 < IMD_PRIMARY_BIN_MIN || index10 > IMD_PRIMARY_BIN_MAX ) {
+		#if DEBUG_PSK_IMD
+		if ( ( ++imdRejectPrimaryCount & 0x3f ) == 1 ) NSLog( @"PSK IMD: reject primary peak at bin %d", index10 ) ;
+		#endif
+		return NO ;
+	}	//  ignore, too far off tuned
 	
 	for ( i = 1; i < 12; i++ ) {
 		v = re[512-i] ;
@@ -234,7 +253,12 @@ static float ibuf[256], qbuf[256], bbuf[256] ;
 	}
 	diff = index10 - index11 ;
 	
-	if ( diff < 15 || diff > 17 ) return NO ;			// peaks don't correspond to idling PSK signal?
+	if ( diff < IMD_BIN_SPACING_MIN || diff > IMD_BIN_SPACING_MAX ) {
+		#if DEBUG_PSK_IMD
+		if ( ( ++imdRejectSpacingCount & 0x3f ) == 1 ) NSLog( @"PSK IMD: reject peak spacing %d (bins %d,%d)", diff, index10, index11 ) ;
+		#endif
+		return NO ;
+	}			// peaks don't correspond to tuned PSK signal?
 		
 	//  power at 3rd IMD locations
 	i = index10 + 16 ;
@@ -302,6 +326,9 @@ static float ibuf[256], qbuf[256], bbuf[256] ;
 		
 	//  IMD, with noise correction term
 	imdr = ( imd * imd )/( imd+noise+0.0000001 ) / ( ( carrier * carrier )/( carrier + noise + 0.0000001 ) + 0.0000001 ) ;	
+	#if DEBUG_PSK_IMD
+	if ( ( ++imdEstimateCount & 0x1f ) == 1 ) NSLog( @"PSK IMD: carrier %.3g noise %.3g imd %.3g ratio %.4f", carrier, noise, imd, imdr ) ;
+	#endif
 	
 	if ( imd > noise*2 ) {
 		//  if IMD is +6 dB of noise, report unqualified IMD
@@ -338,14 +365,14 @@ static float ibuf[256], qbuf[256], bbuf[256] ;
 		freqIndicatorBufQ[i+freqIndicatorMux] = quadrature[i] ;
 	}
 	
-	//  use a simple BPSK demodulator to look for 180 degree phase transitions
+	//  use the bit clock phase to gather a measurement window for the IMD estimator
 	if ( bitSyncPhase >= 0 && bitSyncPhase < 32 ) {
 		currentI = inphase[bitSyncPhase] ;
 		currentQ = quadrature[bitSyncPhase] ;
 		detect = currentI*previousI + currentQ*previousQ ;		//  Eq. 4.10, Okunev
 		previousI = currentI ;
 		previousQ = currentQ ;
-		if ( detect >= 0 || imdMux > 15 ) imdMux = 0 ;			//  not phase transition chip and sanity check
+		if ( imdMux > 15 ) imdMux = 0 ;			//  sanity check
 		//  insert chip into buffer
 		offset = imdMux * 32 ;
 		for ( i = 0; i < 32; i++ ) {
@@ -355,7 +382,7 @@ static float ibuf[256], qbuf[256], bbuf[256] ;
 		imdMux++ ;
 		if ( imdMux >= 16 ) {
 			imdMux = 0 ;
-			//  successfully gathered 256 samples of consecutive phase changes
+			//  gathered 256 bit-synchronous wideband samples
 			if ( frequencyLocked ) {
 				sinput.realp = &imdBufI[0] ;
 				sinput.imagp = &imdBufQ[0] ;
@@ -365,21 +392,26 @@ static float ibuf[256], qbuf[256], bbuf[256] ;
 				CMPerformComplexFFT( imdFFT, &sinput, &output ) ;
 				[ self estimateIMD:&output ] ;
 			}
+			else {
+				#if DEBUG_PSK_IMD
+				if ( ( ++imdWaitingForLockCount & 0x3f ) == 1 ) NSLog( @"PSK IMD: waiting for frequency lock before estimating" ) ;
+				#endif
+			}
 		}
 	}
 	
 	freqIndicatorMux += 32 ;
 	if ( freqIndicatorMux >= 1024 ) {
 		freqIndicatorMux = 0 ;
-		if ( frequencyLocked ) {
-			sinput.realp = &freqIndicatorBufI[0] ;
-			sinput.imagp = &freqIndicatorBufQ[0] ;
-			output.realp = &widebandSpecI[0] ;
-			output.imagp = &widebandSpecQ[0] ;
-			//  1024 point FFT, windowed
-			CMPerformComplexFFT( fft, &sinput, &output ) ;
-			[ self newSpectrum:&output size:1024 ] ;
-		}
+		//  The upper PSK spectrum display is diagnostic UI and should remain active
+		//  while tuning, even before AFC decides the receiver is frequency locked.
+		sinput.realp = &freqIndicatorBufI[0] ;
+		sinput.imagp = &freqIndicatorBufQ[0] ;
+		output.realp = &widebandSpecI[0] ;
+		output.imagp = &widebandSpecQ[0] ;
+		//  1024 point FFT, windowed
+		CMPerformComplexFFT( fft, &sinput, &output ) ;
+		[ self newSpectrum:&output size:1024 ] ;
 	}
 }
 
