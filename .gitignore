@@ -16,3 +16,8 @@ profile
 *.moved-aside
 DerivedData
 .idea/
+
+# Local packaged app artifacts
+/cocoaModem*.zip
+/cocoaModem*.app/
+/crashreports/
