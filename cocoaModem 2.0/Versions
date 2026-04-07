@@ -1,3 +1,22 @@
+2.1rc3	(Apr 7, 2026)
+		PSK and MFSK indicator rendering fixes.
+		Macro transmit handoff improvements across PSK, MFSK, RTTY, and Wideband CW.
+		Hellschreiber transmit fixes and related UI/runtime cleanups.
+
+2.1rc2	(Apr 6, 2026)
+		Added the EA RTTY contest interface and bundled macro resource.
+		Improved contest workflow, macro editing, and logging behavior on current macOS.
+		Added serial line keyer support for external CW/PTT operation and tightened FSK/PTT integration.
+
+2.1rc1-fix1	(Apr 5, 2026)
+		Fixed an AFSK RTTY transmit replay regression and bumped the app to 2.1rc1-fix1.
+
+2.1rc1	(Apr 5, 2026)
+		Updated cocoaModem for current macOS compatibility and universal Apple Silicon/Intel builds.
+		Added external FSK keying support for RTTY operation.
+		Added fldigi-compatible XML-RPC control for RumLogNG contest integration.
+		Added Apple Events permission support for modern macOS automation.
+
 0.10	(Nov 2005) 
 		Major reorganization of cocoaModem into cocoaModem 2.0
 		Change source code copyright to Creative Commons
