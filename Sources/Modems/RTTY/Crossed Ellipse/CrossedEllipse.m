@@ -24,6 +24,7 @@
 	if ( self ) {
 		modem = nil ;
 		overrun = [ [ NSLock alloc ] init ] ;
+		displayGain = 1.0 ;
 		fatness = 1.0 ;
 		
 		//  phosphor decay is modeled with a ring buffer of FADE entries
@@ -53,6 +54,12 @@
 - (void)setFatness:(float)value
 {
 	fatness = value ;
+}
+
+- (void)setDisplayGain:(float)value
+{
+	if ( value < 0.1 ) value = 0.1 ;
+	displayGain = value ;
 }
 
 //  create IIR filters for mark and space frequencies
@@ -275,7 +282,7 @@ int alp( int low, int high, int value, int shift )
 	xp = width/2 ;
 	yp = height/2 ;
 	max = width*height - 1 ;
-	gain = scale/mGain ;
+	gain = ( scale*displayGain )/mGain ;
 	
 	//  moderately BPF around the signal to remove noise
 	CMPerformFIR( bpf, data, samples, bpfData ) ;

@@ -7099,7 +7099,7 @@
 				<integer>45</integer>
 			</dict>
 		</dict>
-		<string>cocoaModem 2.0</string>
+		<string>cocoaModem 2.1rc4</string>
 		<dict>
 			<key>$class</key>
 			<dict>
@@ -7175,7 +7175,7 @@
 				<integer>443</integer>
 			</dict>
 		</dict>
-		<string>About cocoaModem 2.0</string>
+		<string>About cocoaModem 2.1rc4</string>
 		<string>showAboutPanel:</string>
 		<dict>
 			<key>$classes</key>
@@ -13321,7 +13321,7 @@
 			</dict>
 		</dict>
 		<string>{{437, 164}, {925, 653}}</string>
-		<string>            cocoaModem 2.0</string>
+		<string>            cocoaModem 2.1rc4</string>
 		<dict>
 			<key>$class</key>
 			<dict>
@@ -15908,7 +15908,7 @@
 			</dict>
 		</dict>
 		<string>{{390, 60}, {925, 653}}</string>
-		<string>           cocoaModem 2.0</string>
+		<string>           cocoaModem 2.1rc4</string>
 		<dict>
 			<key>$class</key>
 			<dict>
@@ -18936,7 +18936,7 @@
 		<string>Menu Item (Display PSK31 output in Raw)</string>
 		<string>View</string>
 		<string>old splash</string>
-		<string>Text Field Cell (cocoaModem 2.0)</string>
+		<string>Text Field Cell (cocoaModem 2.1rc4)</string>
 		<string>Menu Item (RST - Exchange)</string>
 		<string>Menu Item (Preferences…)</string>
 		<string>Menu Item (Undo)</string>
@@ -18965,7 +18965,7 @@
 		<string>No Tabs Tab View (Tab, Tab, Tab, Tab)</string>
 		<string>Top Tab View (None)-1</string>
 		<string>Separator-1</string>
-		<string>Menu Item (About cocoaModem 2.0)</string>
+		<string>Menu Item (About cocoaModem 2.1rc4)</string>
 		<string>Separator-15</string>
 		<string>Menu Item (Toggle Interface)</string>
 		<string>Selected Tab View Item (Tab)-2</string>
@@ -19110,7 +19110,7 @@
 		<string>Menu Item (cocoaModem)</string>
 		<string>Menu Item (Select and Clear Callsign)</string>
 		<string>Static Text (Frequency)</string>
-		<string>Static Text (cocoaModem 2.0)</string>
+		<string>Static Text (cocoaModem 2.1rc4)</string>
 		<string>Content View-8</string>
 		<string>Menu Item (Zoom)</string>
 		<string>Menu Item (Show Log)</string>

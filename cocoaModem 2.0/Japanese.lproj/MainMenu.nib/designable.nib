@@ -34,7 +34,7 @@
 				<int key="NSWindowBacking">2</int>
 				<string key="NSWindowRect">{{179, 71}, {925, 653}}</string>
 				<int key="NSWTFlags">1886912512</int>
-				<string key="NSWindowTitle">            cocoaModem 2.1rc1</string>
+				<string key="NSWindowTitle">            cocoaModem 2.1rc4</string>
 				<string key="NSWindowClass">NSPanel</string>
 				<object class="NSMutableString" key="NSViewClass">
 					<characters key="NS.bytes">View</characters>
@@ -174,7 +174,7 @@
 							<array class="NSMutableArray" key="NSMenuItems">
 								<object class="NSMenuItem" id="182122217">
 									<reference key="NSMenu" ref="749095236"/>
-									<string key="NSTitle">cocoaModem 2.1rc1 について</string>
+									<string key="NSTitle">cocoaModem 2.1rc4 について</string>
 									<string key="NSKeyEquiv"/>
 									<int key="NSMnemonicLoc">2147483647</int>
 									<reference key="NSOnImage" ref="813239617"/>
@@ -1293,7 +1293,7 @@
 				<int key="NSWindowBacking">2</int>
 				<string key="NSWindowRect">{{91, 71}, {925, 653}}</string>
 				<int key="NSWTFlags">1886912512</int>
-				<string key="NSWindowTitle">           cocoaModem 2.1rc1</string>
+				<string key="NSWindowTitle">           cocoaModem 2.1rc4</string>
 				<string key="NSWindowClass">NSPanel</string>
 				<object class="NSMutableString" key="NSViewClass">
 					<characters key="NS.bytes">View</characters>
@@ -1458,7 +1458,7 @@
 							<object class="NSTextFieldCell" key="NSCell" id="850788885">
 								<int key="NSCellFlags">67239424</int>
 								<int key="NSCellFlags2">138412032</int>
-								<string key="NSContents">cocoaModem 2.1rc1</string>
+								<string key="NSContents">cocoaModem 2.1rc4</string>
 								<object class="NSFont" key="NSSupport">
 									<string key="NSName">Verdana</string>
 									<double key="NSSize">18</double>
@@ -1968,7 +1968,7 @@
 				<int key="NSWindowBacking">2</int>
 				<string key="NSWindowRect">{{52, 600}, {914, 130}}</string>
 				<int key="NSWTFlags">-260571136</int>
-				<string key="NSWindowTitle">            cocoaModem 2.1rc1</string>
+				<string key="NSWindowTitle">            cocoaModem 2.1rc4</string>
 				<string key="NSWindowClass">NSPanel</string>
 				<object class="NSMutableString" key="NSViewClass">
 					<characters key="NS.bytes">View</characters>

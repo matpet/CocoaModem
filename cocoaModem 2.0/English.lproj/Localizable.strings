@@ -3,9 +3,9 @@
 "Update file not found" = "Could not open URL http://www.w7ay.net/site/Downloads/updates.txt";
 "No update info" = "Sorry. The URL http://www.w7ay.net/site/Downloads/updates.txt does not contain update information for cocoaModem.";
 "New download available" = "A newer version of cocoaModem is available.";
-"Update available info" = "cocoaModem 2.1rc1 v%4.2f is available for download.";
+"Update available info" = "cocoaModem 2.1rc4 v%4.2f is available for download.";
 "Up to date" = "Your copy of cocoaModem is up to date.";
-"Up to date info" = "cocoaModem 2.1rc1 v%4.2f is already the latest version." ;
+"Up to date info" = "cocoaModem 2.1rc4 v%4.2f is already the latest version." ;
 
 /* the follow should return "0" for all systems except for Japanese Mac OS X */
 "Use Shift-JIS" = "0";
@@ -132,4 +132,3 @@
 "selected macro is empty" = "The selected macro is empty.";
 "database not saved" = "Contest database not yet saved!";
 "save contest" = "Some item(s) of the contest database have not yet been saved.  Please select the Save menu item in the Contest menu in the Menu Bar.";
-

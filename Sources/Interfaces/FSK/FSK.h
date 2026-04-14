@@ -54,6 +54,7 @@ typedef struct {
 - (void)startSampling:(float)baudrate invert:(Boolean)invertTx stopBits:(int)stopIndex ;
 - (void)stopSampling ;
 - (void)clearOutput ;
+- (Boolean)outputEmpty ;
 - (void)appendASCII:(int)ascii ;
 
 @end

@@ -32,6 +32,7 @@
 		NSBezierPath *axis ;
 		
 		float scale ;
+		float displayGain ;
 		float fatness ;
 		Modem *modem ;
 		float mark[4], space[4] ;
@@ -70,6 +71,7 @@
 	- (void)setPlotColor:(NSColor*)color ;
 	
 	- (void)setFatness:(float)value ;
+	- (void)setDisplayGain:(float)value ;
 	
 	- (void)recacheImage ;
 

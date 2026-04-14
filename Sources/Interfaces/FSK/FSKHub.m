@@ -12,6 +12,7 @@
 #import "TextEncoding.h"
 #include <IOKit/serial/IOSerialKeys.h>
 #include <fcntl.h>
+#include <mach/mach_time.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -36,6 +37,25 @@ static char CMFigs[] = {  '*',  '3',  '\n', '-',  ' ', '*', '8', '7',
 
 static int stopMask[4] = { /* 1 stop */ 0x0, /* 1.5 stops */ 0x8, /* 2 stops */ 0x4, /* default */ 0x8 } ;
 static int stopBitsCount[4] = { 2, 3, 4, 3 } ;
+
+static uint64_t absoluteTimeUnitsForNanoseconds( uint64_t nanoseconds )
+{
+	static mach_timebase_info_data_t timebase = { 0, 0 } ;
+	long double scaled ;
+
+	if ( timebase.denom == 0 ) mach_timebase_info( &timebase ) ;
+	scaled = ( (long double)nanoseconds * (long double)timebase.denom ) / (long double)timebase.numer ;
+	if ( scaled < 1.0 ) return 1 ;
+	return (uint64_t)( scaled + 0.5 ) ;
+}
+
+static void sleepUntilAbsoluteTime( uint64_t deadline )
+{
+	uint64_t now ;
+
+	now = mach_absolute_time() ;
+	if ( deadline > now ) mach_wait_until( deadline ) ;
+}
 
 @implementation FSKHub
 
@@ -101,6 +121,7 @@ static int stopBitsCount[4] = { 2, 3, 4, 3 } ;
 		currentBaudotCharacter = CMLTRSCODE ;	//  v0.88 feedback to aural monitor
 		robust = NO ;							//  v0.88 USOS "compatibility mode"
 		spaceFollowedFIGS = NO ;
+		pendingASCII = 0 ;
 		robustCount = 0 ;
 		serialPortCount = 0 ;
 		
@@ -276,19 +297,28 @@ static int stopBitsCount[4] = { 2, 3, 4, 3 } ;
 {
 	unsigned char buf[2] ;
 	int bit, stopCount ;
+	uint64_t deadline, bitInterval, halfBitInterval ;
 
 	[ self setCurrentBaudotCharacter:code ] ;
 	if ( serialMode ) {
+		//  Use an absolute schedule for each edge so raw RTS/DTR FSK stays close
+		//  to 45.45 baud framing even when the thread wakes up a little late.
+		bitInterval = absoluteTimeUnitsForNanoseconds( currentBitPeriod*1000000000.0 + 0.5 ) ;
+		halfBitInterval = absoluteTimeUnitsForNanoseconds( currentBitPeriod*500000000.0 + 0.5 ) ;
+		deadline = mach_absolute_time() ;
 		[ self setSerialMark:NO ] ;
-		usleep( currentBitPeriod*1000000.0 ) ;
+		deadline += bitInterval ;
+		sleepUntilAbsoluteTime( deadline ) ;
 		for ( bit = 0; bit < 5; bit++ ) {
 			[ self setSerialMark:( ( code >> bit ) & 0x1 ) != 0 ] ;
-			usleep( currentBitPeriod*1000000.0 ) ;
+			deadline += bitInterval ;
+			sleepUntilAbsoluteTime( deadline ) ;
 		}
 		stopCount = stopBitsCount[ currentStopBits & 0x3 ] ;
 		for ( bit = 0; bit < stopCount; bit++ ) {
 			[ self setSerialMark:YES ] ;
-			usleep( currentBitPeriod*500000.0 ) ;
+			deadline += halfBitInterval ;
+			sleepUntilAbsoluteTime( deadline ) ;
 		}
 		return ;
 	}
@@ -341,21 +371,43 @@ static int unmap( int d )
 {
 	unsigned char buf[2] ;
 	int ascii, bchar ;
-	
+
 	if ( currentFd <= 0 || running == NO ) return ;
 	
-	if ( producer == consumer ) {
-		//  no new characters, send LTRS as diddle
+	if ( pendingASCII != 0 ) {
+		ascii = pendingASCII ;
+		pendingASCII = 0 ;
+	}
+	else {
+		if ( producer == consumer ) {
+			//  no new characters, send LTRS as diddle
+			[ self sendLTRS ] ;
+			return ;
+		}
+
+		ascii = fskBuffer[ consumer & 0x7ff ] ;
+		consumer = ( consumer + 1 ) & 0x7ff ;
+		if ( modem ) [ modem transmittedCharacter:ascii ] ;
+	}
+	
+	if ( ascii == 0x5 || ascii == 0x1a ) return ;
+	
+	//  Keep ext-FSK compatible with the AFSK Baudot encoder, including explicit
+	//  \l (LTRS) / \f (FIGS) macro insertions.
+	if ( ascii == CMLTRSCODE || ascii == '=' ) {
 		[ self sendLTRS ] ;
 		return ;
 	}
-	
-	ascii = fskBuffer[ consumer & 0x7ff ] ;
-	if ( modem ) [ modem transmittedCharacter:ascii ] ;
-	
-	if ( ascii == 0x5 ) return ;
-	
-	consumer = ( consumer + 1 ) & 0x7ff ;
+	if ( ascii == CMFIGSCODE ) {
+		[ self sendFIGS ] ;
+		return ;
+	}
+
+	if ( ascii == '\n' ) {
+		//  match the AFSK encoder by transmitting a CR/LF pair for a text view newline.
+		pendingASCII = '\n' ;
+		ascii = '\r' ;
+	}
 	
 	bchar = baudot[ unmap( ascii & 0xff ) & 0x7f ] ;
 	
@@ -397,7 +449,7 @@ static int unmap( int d )
 			shift = kLTRSshift ;
 		}
 	}
-	if ( robustCount > kRobustThreshold ) {										//  v0.88 robust mode
+	if ( robustCount >= kRobustThreshold ) {										//  v0.88 robust mode
 		if ( shift == kLTRSshift ) [ self sendLTRS ] ;							
 		if ( shift == kFIGSshift ) [ self sendFIGS ] ;
 	}
@@ -447,6 +499,9 @@ static int unmap( int d )
 {
 	NSAutoreleasePool *pool = [ [ NSAutoreleasePool alloc ] init ] ;
 
+	if ( running ) {
+		[ self setSerialMark:YES ] ;
+	}
 	[NSThread sleepUntilDate:[ NSDate dateWithTimeIntervalSinceNow:0.18 ] ] ;
 	if ( running ) {
 		fskBusy = YES ;
@@ -531,9 +586,11 @@ static int unmap( int d )
 				producer = consumer = 0 ;
 				shift = kLTRSshift ;
 				spaceFollowedFIGS = NO ;
+				pendingASCII = 0 ;
 				robustCount = 0 ;
 				serialMode = YES ;
 				running = YES ;
+				[ self setSerialMark:YES ] ;
 				[ NSThread detachNewThreadSelector:@selector(serialThread) toTarget:self withObject:nil ] ;
 				return ;
 			}
@@ -562,6 +619,7 @@ static int unmap( int d )
 		keyerCache->currentStopIndex = stopIndex ;
 
 		producer = consumer = 0 ;
+		pendingASCII = 0 ;
 		[ NSTimer scheduledTimerWithTimeInterval:0.18 target:self selector:@selector(delayedStart:) userInfo:self repeats:NO ] ;
 	}
 }
@@ -581,6 +639,12 @@ static int unmap( int d )
 - (void)clearOutput
 {
 	producer = consumer = 0 ;
+	pendingASCII = 0 ;
+}
+
+- (Boolean)outputEmpty
+{
+	return ( producer == consumer && pendingASCII == 0 ) ;
 }
 
 - (void)appendASCII:(int)ascii

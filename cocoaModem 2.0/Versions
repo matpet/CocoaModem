@@ -1,3 +1,8 @@
+2.1rc4	(Apr 14, 2026)
+		Restored functional external FSK RTTY transmit timing and queue drain handling.
+		Aligned external FSK character/keying behavior with the AFSK path, including 45.45 baud normalization and CR/LF handling.
+		Included related RTTY UI/runtime corrections for Wideband and Dual RTTY operation.
+
 2.1rc3	(Apr 7, 2026)
 		PSK and MFSK indicator rendering fixes.
 		Macro transmit handoff improvements across PSK, MFSK, RTTY, and Wideband CW.

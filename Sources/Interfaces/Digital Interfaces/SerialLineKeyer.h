@@ -7,6 +7,7 @@
 	#define _SERIALLINEKEYER_H_
 
 	#import <Cocoa/Cocoa.h>
+	#include <termios.h>
 
 	@interface SerialLineKeyer : NSObject {
 		NSString *path ;
@@ -14,6 +15,8 @@
 		int line ;
 		int token ;
 		int fileDescriptor ;
+		struct termios originalTTYAttrs ;
+		Boolean hasOriginalTTYAttrs ;
 		Boolean invert ;
 		NSConditionLock *timedQueueLock ;
 		Boolean timedQueueRunning ;

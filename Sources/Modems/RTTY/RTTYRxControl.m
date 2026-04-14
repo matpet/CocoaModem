@@ -276,6 +276,11 @@ static CMTonePair adjustTone( CMTonePair *base, int usb, int reverse, float delt
 	if ( tuningView ) [ tuningView setFatness:value ] ;
 }
 
+- (void)setEllipseScale:(float)value
+{
+	if ( tuningView ) [ tuningView setDisplayGain:value ] ;
+}
+
 - (void)setSpectrumView:(Spectrum*)view
 {
 	CMTonePair localTonePair ;

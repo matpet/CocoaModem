@@ -35,6 +35,7 @@
 
 - (id)initIntoTabView:(NSTabView*)tabview manager:(ModemManager*)mgr
 {
+	float ellipseScale = 1.2 ;
 	RTTYConfigSet setA = { 
 		LEFTCHANNEL, 
 		kDualRTTYMainDevice, 
@@ -109,6 +110,7 @@
 		[ a.view setDelegate:self ] ;		//  text selections, etc
 		a.textAttribute = [ a.control textAttribute ] ;
 		[ a.control setName:NSLocalizedString( @"Main Receiver", nil ) ] ;
+		[ a.control setEllipseScale:ellipseScale ] ;
 		[ configA awakeFromModem:&setA rttyRxControl:a.control txConfig:txConfig ] ;
 	
 		//  v0.78
@@ -121,6 +123,7 @@
 		[ b.view setDelegate:self ] ;		//  text selections, etc
 		b.textAttribute = [ b.control textAttribute ] ;
 		[ b.control setName:NSLocalizedString( @"Sub Receiver", nil ) ] ;
+		[ b.control setEllipseScale:ellipseScale ] ;
 		[ (DualRTTYConfig*)configB awakeFromModem:&setB rttyRxControl:b.control txConfig:txConfig ] ;  // note:shared txConfig
 			
 		[ configTab setDelegate:self ] ;

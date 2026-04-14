@@ -203,7 +203,7 @@ static int MacroIndexFromMatrix( id sender )
 	NSString *title ;
 	
 	index = MacroIndexFromMatrix( sender ) ;
-	if ( index < 0 || index > 7 ) {
+	if ( index < 0 || index > 11 ) {
 		[ [ NSNotificationCenter defaultCenter ] postNotificationName:@"SysBeep" object:nil ] ;
 		return ;
 	}

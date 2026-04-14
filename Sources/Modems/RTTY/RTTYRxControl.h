@@ -126,6 +126,7 @@
 	- (void)transmitterTonePairChangedTo:(CMTonePair*)pair ;	//  v0.78
 
 	- (void)setEllipseFatness:(float)value ;
+	- (void)setEllipseScale:(float)value ;
 
 	- (void)fetchTonePairFromMemory ;
 	- (void)updateTonePairInformation ;

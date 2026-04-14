@@ -237,7 +237,8 @@ static float stopDuration[3] = { 1.0, 1.5, 2.0 } ;
 	if ( !fsk ) return NO ;
 	
 	if ( !isTransmit && !configOpen ) {
-		baudRate = [ rttyRxControl actualBaudRate ] ;
+		//  Use the normalized modem baud so a UI entry of "45" keys at true ham RTTY 45.45 baud.
+		baudRate = [ rttyRxControl baudRate ] ;
 		txInvert = [ rttyRxControl invertStateForTransmitter ] ;
 		[ fsk startSampling:baudRate invert:txInvert stopBits:[ stopBits selectedRow ] ] ;
 		if ( transmitButton ) {
@@ -458,7 +459,7 @@ static float stopDuration[3] = { 1.0, 1.5, 2.0 } ;
 
 - (Boolean)transmitBufferEmpty
 {
-	if ( fsk ) return YES ;
+	if ( fsk ) return [ fsk outputEmpty ] ;
 	if ( afsk == nil ) return YES ;
 	return ( [ afsk lengthOfActiveStream ] <= 1 ) ;
 }

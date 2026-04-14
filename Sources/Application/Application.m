@@ -548,7 +548,7 @@ static Boolean CMXMLRPCIsReceiveCommand( NSString *text )
 	params = [ request objectForKey:@"params" ] ;
 	modem = [ stdManager currentModem ] ;
 	if ( [ method isEqualToString:@"fldigi.name" ] ) {
-		[ request setObject:@"cocoaModem 2.1rc3" forKey:@"result" ] ;
+		[ request setObject:@"cocoaModem 2.1rc4" forKey:@"result" ] ;
 		[ request setObject:@"string" forKey:@"type" ] ;
 		return ;
 	}
@@ -1114,7 +1114,7 @@ static Boolean CMXMLRPCIsReceiveCommand( NSString *text )
 	appleScript = [ [ AppDelegate alloc ] initFromApplication:self ] ;
 	xmlrpcServer = [ [ CMXMLRPCServer alloc ] initWithApplication:self ] ;
 	[ xmlrpcServer start ] ;
-	if ( [ self mainWindow ] ) [ [ self mainWindow ] setTitle:@"cocoaModem 2.1rc3" ] ;
+	if ( [ self mainWindow ] ) [ [ self mainWindow ] setTitle:@"cocoaModem 2.1rc4" ] ;
 	
 	[ [ NSApp delegate ] setIsLite:isLite ] ;
 

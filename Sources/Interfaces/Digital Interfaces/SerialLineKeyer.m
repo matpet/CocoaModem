@@ -91,6 +91,7 @@ static int serialFlagForLine( int line )
 		line = serialLine ;
 		token = serialToken ;
 		fileDescriptor = -1 ;
+		hasOriginalTTYAttrs = NO ;
 		invert = NO ;
 		timedQueueLock = [ [ NSConditionLock alloc ] initWithCondition:0 ] ;
 		timedQueueRunning = NO ;
@@ -116,11 +117,57 @@ static int serialFlagForLine( int line )
 
 - (Boolean)openForWrite
 {
+	struct termios options ;
+	int bits ;
+
 	if ( fileDescriptor > 0 ) return YES ;
 	if ( path == nil ) return NO ;
-	fileDescriptor = open( [ path UTF8String ], O_WRONLY | O_NOCTTY | O_NDELAY ) ;
+	fileDescriptor = open( [ path UTF8String ], O_RDWR | O_NOCTTY | O_NDELAY ) ;
 	if ( fileDescriptor < 0 ) return NO ;
-	fcntl( fileDescriptor, F_SETFL, 0 ) ;
+	if ( fcntl( fileDescriptor, F_SETFL, 0 ) < 0 ) {
+		close( fileDescriptor ) ;
+		fileDescriptor = -1 ;
+		return NO ;
+	}
+	if ( tcgetattr( fileDescriptor, &originalTTYAttrs ) >= 0 ) {
+		hasOriginalTTYAttrs = YES ;
+		options = originalTTYAttrs ;
+		options.c_cflag |= ( CLOCAL | CREAD ) ;
+#ifdef CRTSCTS
+		options.c_cflag &= ~CRTSCTS ;
+#endif
+#ifdef CCTS_OFLOW
+		options.c_cflag &= ~CCTS_OFLOW ;
+#endif
+#ifdef CRTS_IFLOW
+		options.c_cflag &= ~CRTS_IFLOW ;
+#endif
+#ifdef CDTR_IFLOW
+		options.c_cflag &= ~CDTR_IFLOW ;
+#endif
+#ifdef CDSR_OFLOW
+		options.c_cflag &= ~CDSR_OFLOW ;
+#endif
+#ifdef CCAR_OFLOW
+		options.c_cflag &= ~CCAR_OFLOW ;
+#endif
+#ifdef MDMBUF
+		options.c_cflag &= ~MDMBUF ;
+#endif
+		options.c_iflag &= ~( IXON | IXOFF | IXANY ) ;
+		options.c_lflag &= ~( ICANON | ECHO | ECHOE | ISIG ) ;
+		options.c_oflag &= ~OPOST ;
+		options.c_cc[ VMIN ] = 0 ;
+		options.c_cc[ VTIME ] = 10 ;
+		tcsetattr( fileDescriptor, TCSANOW, &options ) ;
+	}
+	if ( ioctl( fileDescriptor, TIOCMGET, &bits ) < 0 ) {
+		if ( hasOriginalTTYAttrs ) tcsetattr( fileDescriptor, TCSANOW, &originalTTYAttrs ) ;
+		close( fileDescriptor ) ;
+		fileDescriptor = -1 ;
+		hasOriginalTTYAttrs = NO ;
+		return NO ;
+	}
 	return YES ;
 }
 
@@ -133,9 +180,11 @@ static int serialFlagForLine( int line )
 		while ( timedQueueRunning ) [ NSThread sleepUntilDate:[ NSDate dateWithTimeIntervalSinceNow:0.01 ] ] ;
 	}
 	if ( fileDescriptor > 0 ) {
+		if ( hasOriginalTTYAttrs ) tcsetattr( fileDescriptor, TCSANOW, &originalTTYAttrs ) ;
 		close( fileDescriptor ) ;
 		fileDescriptor = -1 ;
 	}
+	hasOriginalTTYAttrs = NO ;
 }
 
 - (Boolean)setKeyState:(Boolean)state

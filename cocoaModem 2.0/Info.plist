@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleDisplayName</key>
-	<string>cocoaModem 2.1rc3</string>
+	<string>cocoaModem 2.1rc4</string>
 	<key>CFBundleExecutable</key>
 	<string>cocoaModem 2.0</string>
 	<key>CFBundleIconFile</key>
@@ -15,15 +15,15 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>cocoaModem 2.1rc3</string>
+	<string>cocoaModem 2.1rc4</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.1rc3</string>
+	<string>2.1rc4</string>
 	<key>CFBundleSignature</key>
 	<string>ryry</string>
 	<key>CFBundleVersion</key>
-	<string>2.1rc3</string>
+	<string>2.1rc4</string>
 	<key>NSAppleScriptEnabled</key>
 	<string>YES</string>
 	<key>LSMinimumSystemVersion</key>

@@ -289,6 +289,12 @@
 	[ hub clearOutput ] ;
 }
 
+- (Boolean)outputEmpty
+{
+	if ( selectedPort <= 0 ) return YES ;
+	return [ hub outputEmpty ] ;
+}
+
 - (void)appendASCII:(int)ascii
 {
 	[ hub appendASCII:ascii ] ;

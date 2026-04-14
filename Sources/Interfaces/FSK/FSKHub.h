@@ -61,7 +61,7 @@
 		int currentBaudotCharacter ;
 		Boolean robust ;										//  v0.88 USOS "compatibility mode"
 		Boolean spaceFollowedFIGS ;								//  use robust mode to force compatibility of figs followed by space
-		int implicitState ;
+		int pendingASCII ;										//  synthetic follow-up character, e.g. LF after transmitting CR for a textview newline
 		int robustCount ;
 		SerialLineKeyer *serialPorts[64] ;
 		int serialPortCount ;
@@ -85,7 +85,7 @@
 	- (void)startSampling:(int)fd baudRate:(float)baudRate invert:(Boolean)invertTx stopBits:(int)stopIndex modem:(RTTY*)inModem ;
 	- (void)stopSampling ;
 	- (void)clearOutput ;
-	
+	- (Boolean)outputEmpty ;
 	- (void)appendASCII:(int)ascii ;
 	
 	@end

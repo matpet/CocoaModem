@@ -38,6 +38,7 @@
 {
 	CMTonePair tonepair ;
 	float ellipseFatness = 0.9 ;
+	float ellipseScale = 1.0 ;
 	
 	RTTYConfigSet setA = { 
 		LEFTCHANNEL, 
@@ -112,6 +113,7 @@
 		a.textAttribute = [ a.control textAttribute ] ;
 		[ a.control setName:NSLocalizedString( @"Main Receiver", nil ) ] ;
 		[ a.control setEllipseFatness:ellipseFatness ] ;
+		[ a.control setEllipseScale:ellipseScale ] ;
 		[ configA awakeFromModem:&setA rttyRxControl:a.control txConfig:txConfig ] ;
 		[ configA setChannel:0 ] ;
 		control[0] = a.control ;
@@ -133,6 +135,7 @@
 		b.textAttribute = [ b.control textAttribute ] ;
 		[ b.control setName:NSLocalizedString( @"Sub Receiver", nil ) ] ;
 		[ b.control setEllipseFatness:ellipseFatness ] ;
+		[ b.control setEllipseScale:ellipseScale ] ;
 		[ configB awakeFromModem:&setB rttyRxControl:b.control txConfig:txConfig ] ;	// note:shared txConfig
 		[ configB setChannel:1 ] ;
 		control[1] = b.control ;
@@ -663,7 +666,7 @@
 		[ waterfallA setActive:active index:0 ] ; 
 	}
 	else {
-		[ waterfallB setActive:active index:0 ] ; 
+		[ waterfallB setActive:active index:1 ] ;
 	}
 }
 
