@@ -23,6 +23,7 @@ See ATTRIBUTION.md for project provenance and attribution notes.
 ## Notes
 
 - The main Xcode project is in `cocoaModem 2.0/cocoaModem 2.0.xcodeproj`.
+- The live application source tree is the top-level `Sources` directory; the main Xcode project references it from `cocoaModem 2.0` as `../Sources`.
 - This repository focuses on compatibility and maintenance updates, not a rewrite of the original application.
 - The original plain RTTY panel is legacy/deprecated in the upstream design; use Wideband RTTY or Dual RTTY for supported RTTY operation.
 
@@ -35,6 +36,8 @@ See ATTRIBUTION.md for project provenance and attribution notes.
 ## Building
 
 - Open `cocoaModem 2.0/cocoaModem 2.0.xcodeproj` in Xcode.
+- Build products are written to `Builds/<Configuration>/`, for example `Builds/Release/cocoaModem 2.0.app`.
+- Put packaged release archives in `Builds/Packages/`.
 - Build a universal binary when distributing to both Apple Silicon and Intel Macs.
 - Current compatibility work has been validated on macOS 15.7.x.
 

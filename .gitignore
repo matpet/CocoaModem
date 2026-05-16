@@ -18,6 +18,9 @@ DerivedData
 .idea/
 
 # Local packaged app artifacts
+/Builds/*
+!/Builds/
+!/Builds/README.md
 /cocoaModem*.zip
 /cocoaModem*.app/
 /crashreports/

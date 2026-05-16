@@ -10,8 +10,9 @@ The main positive sign is that the app target was already partially migrated to 
 ## Verified Constraints
 
 - The main application target is the Xcode project in `cocoaModem 2.0/cocoaModem 2.0.xcodeproj`.
-- The project format is from the Xcode 3 era and still contains legacy build settings and SDK search paths.
-- Full `xcodebuild` validation was not possible in this environment because the machine is currently pointed at Command Line Tools instead of a full Xcode installation.
+- The authoritative application source tree is the top-level `Sources` directory; the main Xcode project references it from `cocoaModem 2.0` as `../Sources`.
+- The project format is from the Xcode 3 era and still contains some legacy build settings.
+- `xcodebuild -list` has been verified with full Xcode 26.3. Full build validation and runtime hardware validation remain separate checks.
 - The source tree contains direct CoreAudio HAL usage, legacy file and dialog APIs, Carbon includes, and older AudioUnit component APIs.
 - The app includes hardware integration code for serial/PTT and microHAM router/keyer control, which will need runtime verification on current macOS.
 - The original user documentation describes the plain RTTY panel as deprecated; Wideband RTTY and Dual RTTY should be treated as the supported RTTY paths for modernization and runtime verification.
@@ -20,7 +21,7 @@ The main positive sign is that the app target was already partially migrated to 
 
 ### 1. Xcode project modernization
 
-The project file still references old SDK assumptions and obsolete settings such as `VALID_ARCHS` and `ZERO_LINK`.
+The project file still carries legacy structure and settings from the older Xcode project era, including `ONLY_ACTIVE_ARCH = YES` in all configurations.
 This is usually the first mechanical blocker before source-level fixes can be validated.
 
 Primary file:
@@ -42,10 +43,10 @@ Current macOS expects `AudioObject*` property APIs for this style of device enum
 
 Primary files:
 
-- `cocoaModem 2.0/Sources/Audio/audioutils.c`
-- `cocoaModem 2.0/Sources/Audio/audioutils.h`
-- `cocoaModem 2.0/Sources/Audio/AudioManager.m`
-- `cocoaModem 2.0/Sources/Audio/AudioPipes/ModemAudio.m`
+- `Sources/Audio/audioutils.c`
+- `Sources/Audio/audioutils.h`
+- `Sources/Audio/AudioManager.m`
+- `Sources/Audio/AudioPipes/ModemAudio.m`
 - `cocoaModem 2.0/main.m`
 
 Expected work:
@@ -62,9 +63,9 @@ Those should be replaced with URL-based APIs.
 
 Primary files:
 
-- `cocoaModem 2.0/Sources/Audio/AIFFSource.m`
-- `cocoaModem 2.0/Sources/Interfaces/Contest/Cabrillo.m`
-- `cocoaModem 2.0/Sources/Interface Managers/Contest/ContestManager.m`
+- `Sources/Audio/AIFFSource.m`
+- `Sources/Interfaces/Contest/Cabrillo.m`
+- `Sources/Interface Managers/Contest/ContestManager.m`
 
 Expected work:
 
@@ -79,13 +80,13 @@ That code should be removed or replaced with Foundation/AppKit availability logi
 
 Primary files:
 
-- `cocoaModem 2.0/Sources/DSP/error.h`
-- `cocoaModem 2.0/Sources/Filters/CoreFilter/Sources/Filters/CMFFT.h`
-- `cocoaModem 2.0/Sources/Filters/CoreFilter/Sources/Filters/CMDSPWindow.h`
-- `cocoaModem 2.0/Sources/Filters/CoreFilter/Sources/Filters/CMFIR.h`
-- `cocoaModem 2.0/Sources/Interface Managers/Base/ModemManager.m`
-- `cocoaModem 2.0/Sources/Modems/PSK/PSKReceiver.m`
-- `cocoaModem 2.0/Sources/Audio/AudioPipes/ModemSource.m`
+- `Sources/DSP/error.h`
+- `Sources/Filters/CoreFilter/Sources/Filters/CMFFT.h`
+- `Sources/Filters/CoreFilter/Sources/Filters/CMDSPWindow.h`
+- `Sources/Filters/CoreFilter/Sources/Filters/CMFIR.h`
+- `Sources/Interface Managers/Base/ModemManager.m`
+- `Sources/Modems/PSK/PSKReceiver.m`
+- `Sources/Audio/AudioPipes/ModemSource.m`
 
 Expected work:
 
@@ -100,8 +101,8 @@ These should move to the `AudioComponent` APIs.
 
 Primary files:
 
-- `cocoaModem 2.0/Sources/NetAudio/NetSend Class/NetSend.m`
-- `cocoaModem 2.0/Sources/NetAudio/NetReceive Class/NetReceive.m`
+- `Sources/NetAudio/NetSend Class/NetSend.m`
+- `Sources/NetAudio/NetReceive Class/NetReceive.m`
 
 Expected work:
 
@@ -116,9 +117,9 @@ These may still compile but are the main runtime risk areas on current macOS, es
 
 Primary files:
 
-- `cocoaModem 2.0/Sources/Interfaces/FSK/FSKHub.m`
-- `cocoaModem 2.0/Sources/Preferences/Config.m`
-- `cocoaModem 2.0/Sources/Digital Interfaces/*`
+- `Sources/Interfaces/FSK/FSKHub.m`
+- `Sources/Preferences/Config.m`
+- `Sources/Interfaces/Digital Interfaces/*`
 - `cocoaModem 2.0/AppleScripts/*`
 
 Expected work:
@@ -223,5 +224,5 @@ If the goal is a practical modern release, the most realistic scope is:
 
 ## Suggested Next Action
 
-Start with Phase 1 and Phase 2 together: update the project in current Xcode, then capture the first modern compile-error list.
+Start with Phase 2: capture a current modern compile-error list with the full Xcode toolchain.
 That error list will tell you whether the first real code pass should begin in AppKit/file APIs or directly in CoreAudio.
