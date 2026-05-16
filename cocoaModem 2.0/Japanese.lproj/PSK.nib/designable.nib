@@ -971,7 +971,7 @@
 										<object class="NSButtonCell" key="NSCell" id="405530293">
 											<int key="NSCellFlags">67239424</int>
 											<int key="NSCellFlags2">134348800</int>
-											<string key="NSContents">TableView</string>
+											<string key="NSContents">PSK31 Table</string>
 											<reference key="NSSupport" ref="300105054"/>
 											<reference key="NSControlView" ref="1048293011"/>
 											<int key="NSButtonFlags">143016191</int>

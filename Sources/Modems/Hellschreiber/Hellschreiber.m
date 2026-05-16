@@ -557,10 +557,15 @@
 		return YES ;
 	}
 	if ( textView == transmitView ) {
+		NSString *sanitizedReplace = CMStringBySanitizingForTextEncoding( replace ) ;
+		if ( sanitizedReplace != replace ) {
+			[ transmitView replaceCharactersInRange:original withString:sanitizedReplace ] ;
+			return NO ;
+		}
 		if ( slashZero ) {
 			s = ( char* )[ replace cStringUsingEncoding:kTextEncoding ] ;
 			if ( s == nil ) {
-				[ Messages alertWithHiraganaError ] ;
+				NSBeep() ;
 				return NO ;
 			}
 			hasZero = NO ;

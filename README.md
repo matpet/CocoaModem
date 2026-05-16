@@ -36,7 +36,7 @@ See ATTRIBUTION.md for project provenance and attribution notes.
 ## Building
 
 - Open `cocoaModem 2.0/cocoaModem 2.0.xcodeproj` in Xcode.
-- Build products are written to `Builds/<Configuration>/`, for example `Builds/Release/cocoaModem 2.0.app`.
+- Build products are written to `Builds/<Configuration>/`, for example `Builds/Release/cocoaModem 2.1rc5.app`.
 - Put packaged release archives in `Builds/Packages/`.
 - Build a universal binary when distributing to both Apple Silicon and Intel Macs.
 - Current compatibility work has been validated on macOS 15.7.x.
@@ -46,4 +46,5 @@ See ATTRIBUTION.md for project provenance and attribution notes.
 - Original cocoaModem created by W7AY, Kok Chen.
 - Repository updated to restore compatibility with current macOS releases.
 - Current modernization pass includes universal Apple Silicon and Intel builds, Intel launch fixes, and native system appearance behavior on modern macOS.
+- 2.1rc5 labels the app bundle and visible app identity as RC5, clarifies the PSK table UI as PSK31-only, and sanitizes unsupported transmit text punctuation to avoid keyboard encoding alerts.
 - 2.1rc4 restores functional external FSK RTTY transmit behavior, aligns ext-FSK keying with the AFSK path, and includes related Wideband/Dual RTTY UI-runtime corrections on current macOS.

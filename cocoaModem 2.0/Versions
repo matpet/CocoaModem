@@ -1,3 +1,8 @@
+2.1rc5	(May 16, 2026)
+		Updated the app bundle name, visible app title, About menu text, and version metadata to identify RC5 builds.
+		Clarified the PSK table/browser UI as PSK31-only.
+		Sanitized unsupported Unicode punctuation in single-byte transmit entry and macro paths to avoid keyboard encoding alerts.
+
 2.1rc4	(Apr 14, 2026)
 		Restored functional external FSK RTTY transmit timing and queue drain handling.
 		Aligned external FSK character/keying behavior with the AFSK path, including 45.45 baud normalization and CR/LF handling.

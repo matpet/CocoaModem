@@ -3333,7 +3333,7 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_NAME = "cocoaModem 2.0";
+				PRODUCT_NAME = "cocoaModem 2.1rc5";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -3361,7 +3361,7 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_NAME = "cocoaModem 2.0";
+				PRODUCT_NAME = "cocoaModem 2.1rc5";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -3393,7 +3393,7 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_NAME = "cocoaModem 2.0";
+				PRODUCT_NAME = "cocoaModem 2.1rc5";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
