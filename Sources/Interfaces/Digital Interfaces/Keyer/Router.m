@@ -12,7 +12,18 @@
 #import "MicroKeyer.h"
 #import "RouterCommands.h"
 #import "TextEncoding.h"
+#include <ctype.h>
 #include <IOKit/serial/IOSerialKeys.h>
+#include <stdlib.h>
+
+static Boolean serialDebugEnabled( void )
+{
+	const char *env ;
+
+	env = getenv( "COCOAMODEM_SERIAL_DEBUG" ) ;
+	if ( env && env[0] && env[0] != '0' ) return YES ;
+	return [ [ NSUserDefaults standardUserDefaults ] boolForKey:@"SerialDebug" ] ;
+}
 
 
 @implementation Router
@@ -29,6 +40,7 @@
 	io_object_t modemService ;
     CFMutableDictionaryRef classesToMatch ;
 	CFTypeRef cfString ;
+	Boolean debug ;
 	int count ;
 
     kernResult = IOMasterPort( MACH_PORT_NULL, &masterPort ) ;
@@ -41,8 +53,14 @@
 	CFDictionarySetValue( classesToMatch, CFSTR(kIOSerialBSDTypeKey), CFSTR(kIOSerialBSDRS232Type) ) ;
     kernResult = IOServiceGetMatchingServices( masterPort, classesToMatch, &serialPortIterator ) ;    
 	// walk through the iterator
+	debug = serialDebugEnabled() ;
 	count = 0 ;
-	while ( ( modemService = IOIteratorNext( serialPortIterator ) ) && count < maxCount ) {
+	while ( ( modemService = IOIteratorNext( serialPortIterator ) ) ) {
+		if ( count >= maxCount ) {
+			if ( debug ) NSLog( @"Router: skipping extra serial port beyond cap (%d)", maxCount ) ;
+			IOObjectRelease( modemService ) ;
+			continue ;
+		}
         cfString = IORegistryEntryCreateCFProperty( modemService, CFSTR(kIOTTYDeviceKey), kCFAllocatorDefault, 0 ) ;
         if ( cfString ) {
 			stream[count] = [ [ NSString stringWithString:(NSString*)cfString ] retain ] ;
@@ -51,12 +69,14 @@
 			if ( cfString )  {
 				path[count] = [ [ NSString stringWithString:(NSString*)cfString ] retain ] ;
 				CFRelease( cfString ) ;
+				if ( debug ) NSLog( @"Router: %@ (%@)", stream[count], path[count] ) ;
 				count++ ;
 			}
 		}
         IOObjectRelease( modemService ) ;
     }
 	IOObjectRelease( serialPortIterator ) ;
+	if ( debug ) NSLog( @"Router: found %d serial ports (cap %d)", count, maxCount ) ;
 	return count ;
 }
 
@@ -134,10 +154,17 @@
 		hasKeyer = NO ;
 		ports = [ self findPorts:&path[0] stream:&stream[0] max:32 ] ;
 		for ( i = 0; i < ports; i++ ) {
-			name = ( [ stream[i] length ] < 13 ) ? @"" : [ stream[i] substringToIndex:12 ] ;
-			strcpy( cstring, [ name cStringUsingEncoding:kTextEncoding ] ) ;
-			cstring[10] = 'M' ;	//  change usbserial-DK and usbserial-CK to MK
-			if ( strcmp( cstring, "usbserial-MK" ) == 0 || strcmp( cstring, "usbserial-M2" ) == 0 ) hasKeyer = YES ;
+			name = stream[i] ;
+			if ( [ name hasPrefix:@"usbserial-" ] ) {
+				snprintf( cstring, sizeof( cstring ), "%s", [ name cStringUsingEncoding:kTextEncoding ] ) ;
+				//  legacy microHAM IDs (usbserial-CK/DK -> MK)
+				if ( strlen( cstring ) > 10 ) {
+					cstring[10] = 'M' ;
+					if ( strcmp( cstring, "usbserial-MK" ) == 0 || strcmp( cstring, "usbserial-M2" ) == 0 ) hasKeyer = YES ;
+				}
+				//  modern adapters often enumerate as usbserial-<digits>
+				if ( strlen( cstring ) > 10 && isdigit( cstring[10] ) ) hasKeyer = YES ;
+			}
 			[ stream[i] release ] ;
 			[ path[i] release ] ;
 		}

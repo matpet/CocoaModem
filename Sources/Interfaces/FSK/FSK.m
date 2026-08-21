@@ -24,8 +24,8 @@
 	NSArray *keyers ;
 	MicroKeyer *keyer ;
 	Application *application ;
-	NSString *path[32], *stream[32], *title ;
-	int i, n, digiKeyers, microKeyers, menuItems, serialPorts ;
+	NSString *path[64], *stream[64], *title ;
+	int i, n, digiKeyers, microKeyers, menuItems, serialPorts, maxInterfaces ;
 
 	self = [ super init ] ;
 	if ( self ) {
@@ -33,6 +33,7 @@
 		menu = fskMenu ;
 		hub = fskHub ;
 		selectedPort = 0 ;
+		maxInterfaces = (int)( sizeof( interfaces ) / sizeof( Interfaces ) ) ;
 		
 		application = [ NSApp delegate ] ;	
 		digitalInterfaces = [ application digitalInterfaces ] ;
@@ -110,7 +111,7 @@
 			}
 		}
 
-		serialPorts = [ SerialLineKeyer findSerialPorts:&path[0] stream:&stream[0] maxPorts:32 ] ;
+		serialPorts = [ SerialLineKeyer findSerialPorts:&path[0] stream:&stream[0] maxPorts:64 ] ;
 		if ( serialPorts > 0 ) {
 			[ [ menu menu ] addItem:[ NSMenuItem separatorItem ] ] ;
 			interfaces[menuItems].type = kSeparatorType ;
@@ -128,7 +129,7 @@
 			interfaces[menuItems].enabled = NO ;
 			menuItems++ ;
 
-			for ( i = 0; i < serialPorts && menuItems < 30; i++ ) {
+			for ( i = 0; i < serialPorts && menuItems < ( maxInterfaces-2 ); i++ ) {
 				title = [ kSerialRTSMenuPrefix stringByAppendingString:stream[i] ] ;
 				[ menu addItemWithTitle:title ] ;
 				interfaces[menuItems].type = kSerialFSKType ;
@@ -138,7 +139,7 @@
 				interfaces[menuItems].enabled = YES ;
 				menuItems++ ;
 
-				if ( menuItems >= 31 ) break ;
+				if ( menuItems >= ( maxInterfaces-1 ) ) break ;
 
 				title = [ kSerialDTRMenuPrefix stringByAppendingString:stream[i] ] ;
 				[ menu addItemWithTitle:title ] ;

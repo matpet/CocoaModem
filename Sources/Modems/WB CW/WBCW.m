@@ -72,7 +72,7 @@
 
 - (void)populateModulationMenu
 {
-	NSString *path[32], *stream[32], *title ;
+	NSString *path[64], *stream[64], *title ;
 	NSDictionary *info ;
 	NSMenuItem *item ;
 	int i, count, menuTag ;
@@ -86,7 +86,7 @@
 	[ modulationMenu addItemWithTitle:@"DigiKeyer OOK" ] ;
 	[ [ modulationMenu lastItem ] setTag:kWBCWDigiKeyerOOKTag ] ;
 
-	count = [ SerialLineKeyer findSerialPorts:&path[0] stream:&stream[0] maxPorts:32 ] ;
+	count = [ SerialLineKeyer findSerialPorts:&path[0] stream:&stream[0] maxPorts:64 ] ;
 	if ( count > 0 ) {
 		[ [ modulationMenu menu ] addItem:[ NSMenuItem separatorItem ] ] ;
 		for ( i = 0; i < count; i++ ) {

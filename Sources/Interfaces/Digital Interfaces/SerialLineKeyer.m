@@ -10,6 +10,7 @@
 #include <IOKit/IOKitLib.h>
 #include <IOKit/serial/IOSerialKeys.h>
 #include <fcntl.h>
+#include <stdlib.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -17,6 +18,15 @@
 static int serialFlagForLine( int line )
 {
 	return ( line == 0 ) ? TIOCM_DTR : TIOCM_RTS ;
+}
+
+static Boolean serialDebugEnabled( void )
+{
+	const char *env ;
+
+	env = getenv( "COCOAMODEM_SERIAL_DEBUG" ) ;
+	if ( env && env[0] && env[0] != '0' ) return YES ;
+	return [ [ NSUserDefaults standardUserDefaults ] boolForKey:@"SerialDebug" ] ;
 }
 
 @implementation SerialLineKeyer
@@ -51,6 +61,7 @@ static int serialFlagForLine( int line )
 	io_object_t modemService ;
 	CFMutableDictionaryRef classesToMatch ;
 	CFTypeRef cfString ;
+	Boolean debug ;
 	int count ;
 
 	kernResult = IOMasterPort( MACH_PORT_NULL, &masterPort ) ;
@@ -63,8 +74,14 @@ static int serialFlagForLine( int line )
 	kernResult = IOServiceGetMatchingServices( masterPort, classesToMatch, &serialPortIterator ) ;
 	if ( kernResult != KERN_SUCCESS ) return 0 ;
 
+	debug = serialDebugEnabled() ;
 	count = 0 ;
-	while ( ( modemService = IOIteratorNext( serialPortIterator ) ) && count < maxPorts ) {
+	while ( ( modemService = IOIteratorNext( serialPortIterator ) ) ) {
+		if ( count >= maxPorts ) {
+			if ( debug ) NSLog( @"SerialLineKeyer: skipping extra serial port beyond cap (%d)", maxPorts ) ;
+			IOObjectRelease( modemService ) ;
+			continue ;
+		}
 		cfString = IORegistryEntryCreateCFProperty( modemService, CFSTR( kIOTTYDeviceKey ), kCFAllocatorDefault, 0 ) ;
 		if ( cfString ) {
 			streamArray[count] = [ (NSString*)cfString retain ] ;
@@ -73,12 +90,14 @@ static int serialFlagForLine( int line )
 			if ( cfString ) {
 				pathArray[count] = [ (NSString*)cfString retain ] ;
 				CFRelease( cfString ) ;
+				if ( debug ) NSLog( @"SerialLineKeyer: %@ (%@)", streamArray[count], pathArray[count] ) ;
 				count++ ;
 			}
 		}
 		IOObjectRelease( modemService ) ;
 	}
 	IOObjectRelease( serialPortIterator ) ;
+	if ( debug ) NSLog( @"SerialLineKeyer: found %d serial ports (cap %d)", count, maxPorts ) ;
 	return count ;
 }
 

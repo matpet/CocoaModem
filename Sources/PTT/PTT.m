@@ -13,6 +13,7 @@
 #include <IOKit/IOKitLib.h>
 #include <IOKit/serial/IOSerialKeys.h>
 #include <IOKit/IOBSD.h>
+#include <stdlib.h>
 #include "SerialPort.h"
 #include "microKEYER.h"
 
@@ -21,6 +22,15 @@
 
 
 static int rtsMap[] = { 1, 0, 2 } ;			//  correspondence between pref button and useRTS variable
+
+static Boolean serialDebugEnabled( void )
+{
+	const char *env ;
+
+	env = getenv( "COCOAMODEM_SERIAL_DEBUG" ) ;
+	if ( env && env[0] && env[0] != '0' ) return YES ;
+	return [ [ NSUserDefaults standardUserDefaults ] boolForKey:@"SerialDebug" ] ;
+}
 
 - (void)alertMessage:(NSString*)msg informativeText:(NSString*)info
 {
@@ -233,6 +243,8 @@ static int rtsMap[] = { 1, 0, 2 } ;			//  correspondence between pref button and
 	io_object_t modemService ;
     CFMutableDictionaryRef classesToMatch ;
 	CFTypeRef cfString ;
+	Boolean debug ;
+	int maxPorts ;
 	int count ;
 
     kernResult = IOMasterPort( MACH_PORT_NULL, &masterPort ) ;
@@ -247,8 +259,15 @@ static int rtsMap[] = { 1, 0, 2 } ;			//  correspondence between pref button and
     kernResult = IOServiceGetMatchingServices( masterPort, classesToMatch, &serialPortIterator ) ;    
     
 	// walk through the iterator
+	debug = serialDebugEnabled() ;
+	maxPorts = 32 ;
 	count = 0 ;
 	while ( ( modemService = IOIteratorNext( serialPortIterator ) ) ) {
+		if ( count >= maxPorts ) {
+			if ( debug ) NSLog( @"PTT: skipping extra serial port beyond cap (%d)", maxPorts ) ;
+			IOObjectRelease( modemService ) ;
+			continue ;
+		}
         cfString = IORegistryEntryCreateCFProperty( modemService, CFSTR(kIOTTYDeviceKey), kCFAllocatorDefault, 0 ) ;
         if ( cfString ) {
 			stream[count] = [ [ NSString stringWithString:(NSString*)cfString ] retain ] ;
@@ -257,12 +276,14 @@ static int rtsMap[] = { 1, 0, 2 } ;			//  correspondence between pref button and
 			if ( cfString )  {
 				path[count] = [ [ NSString stringWithString:(NSString*)cfString ] retain ] ;
 				CFRelease( cfString ) ;
+				if ( debug ) NSLog( @"PTT: %@ (%@)", stream[count], path[count] ) ;
 				count++ ;
 			}
 		}
         IOObjectRelease( modemService ) ;
     }
 	IOObjectRelease( serialPortIterator ) ;
+	if ( debug ) NSLog( @"PTT: found %d serial ports (cap %d)", count, maxPorts ) ;
 	return count ;
 }
 

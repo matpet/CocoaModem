@@ -11,6 +11,8 @@
 @class RTTY ;
 @class FSKHub ;
 
+#define kMaxFSKInterfaces 96
+
 typedef struct {
 	MicroKeyer *keyer ;
 	NSString *path ;
@@ -31,7 +33,7 @@ typedef struct {
 @interface FSK : NSObject {	
 	RTTY *modem ;
 	NSPopUpButton *menu ;
-	Interfaces interfaces[32] ;
+	Interfaces interfaces[kMaxFSKInterfaces] ;
 	int types[16] ;
 	FSKHub *hub ;
 	int selectedPort ;
