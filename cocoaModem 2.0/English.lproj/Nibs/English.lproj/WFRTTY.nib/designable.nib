@@ -3844,7 +3844,7 @@ AAAAAAAAAAAAAA</bytes>
 												<object class="NSTextFieldCell" key="NSCell" id="839563105">
 													<int key="NSCellFlags">-2080244224</int>
 													<int key="NSCellFlags2">4325376</int>
-													<string key="NSContents">dB</string>
+													<string key="NSContents">dB (0-24)</string>
 													<reference key="NSSupport" ref="539489272"/>
 													<reference key="NSControlView" ref="112093647"/>
 													<reference key="NSBackgroundColor" ref="6804132"/>
@@ -3860,7 +3860,7 @@ AAAAAAAAAAAAAA</bytes>
 												<object class="NSTextFieldCell" key="NSCell" id="745675690">
 													<int key="NSCellFlags">-2080244224</int>
 													<int key="NSCellFlags2">4325376</int>
-													<string key="NSContents">Pad</string>
+													<string key="NSContents">Boost</string>
 													<reference key="NSSupport" ref="539489272"/>
 													<reference key="NSControlView" ref="445277631"/>
 													<reference key="NSBackgroundColor" ref="6804132"/>
@@ -4721,7 +4721,7 @@ AAAAAAAAAAAAAA</bytes>
 												<object class="NSTextFieldCell" key="NSCell" id="354002931">
 													<int key="NSCellFlags">-2080244224</int>
 													<int key="NSCellFlags2">4325376</int>
-													<string key="NSContents">dB</string>
+													<string key="NSContents">dB (0-24)</string>
 													<reference key="NSSupport" ref="539489272"/>
 													<reference key="NSControlView" ref="293901970"/>
 													<reference key="NSBackgroundColor" ref="6804132"/>
@@ -4737,7 +4737,7 @@ AAAAAAAAAAAAAA</bytes>
 												<object class="NSTextFieldCell" key="NSCell" id="233382037">
 													<int key="NSCellFlags">-2080244224</int>
 													<int key="NSCellFlags2">4325376</int>
-													<string key="NSContents">Pad</string>
+													<string key="NSContents">Boost</string>
 													<reference key="NSSupport" ref="539489272"/>
 													<reference key="NSControlView" ref="228956745"/>
 													<reference key="NSBackgroundColor" ref="6804132"/>

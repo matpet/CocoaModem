@@ -2883,7 +2883,7 @@
 												<object class="NSTextFieldCell" key="NSCell" id="158102228">
 													<int key="NSCellFlags">-2080244224</int>
 													<int key="NSCellFlags2">4325376</int>
-													<string key="NSContents">dB</string>
+													<string key="NSContents">dB (0-24)</string>
 													<reference key="NSSupport" ref="846220972"/>
 													<reference key="NSControlView" ref="28177869"/>
 													<reference key="NSBackgroundColor" ref="650385717"/>
@@ -2899,7 +2899,7 @@
 												<object class="NSTextFieldCell" key="NSCell" id="41646548">
 													<int key="NSCellFlags">-2080244224</int>
 													<int key="NSCellFlags2">4325376</int>
-													<string key="NSContents">Pad</string>
+													<string key="NSContents">Boost</string>
 													<reference key="NSSupport" ref="846220972"/>
 													<reference key="NSControlView" ref="763988737"/>
 													<reference key="NSBackgroundColor" ref="650385717"/>

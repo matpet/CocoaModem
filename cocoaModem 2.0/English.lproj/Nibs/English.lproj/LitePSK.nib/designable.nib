@@ -3178,7 +3178,7 @@
 							<object class="NSTextFieldCell" key="NSCell" id="989602520">
 								<int key="NSCellFlags">-2080244224</int>
 								<int key="NSCellFlags2">4325376</int>
-								<string key="NSContents">Pad</string>
+								<string key="NSContents">Boost</string>
 								<reference key="NSSupport" ref="531907047"/>
 								<reference key="NSControlView" ref="355789371"/>
 								<reference key="NSBackgroundColor" ref="274444117"/>
