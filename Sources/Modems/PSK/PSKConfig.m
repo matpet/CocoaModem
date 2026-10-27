@@ -21,6 +21,8 @@
 #import "CMPCO.h"
 #import "CMDSPWindow.h"
 
+static NSString *kPSKColorDefaultsNormalizedV1 = @"PSKColorDefaultsNormalizedV1" ;
+
 
 @implementation PSKConfig
 
@@ -147,7 +149,10 @@
 	[ pref setInt:1 forKey:kFastPlayback ] ;
 	[ pref setInt:1 forKey:kPSKSideband ] ;				// default to USB
 	[ pref setFloat:0.0 forKey:kPSKOffset ] ;			// and no VFO offset
-	[ self retrieveActualColorPreferences:pref ] ;
+	[ self set:kPSKTextColor fromRed:1.0 green:0.8 blue:0.0 into:pref ] ;
+	[ self set:kPSKSentColor fromRed:1.0 green:0.8 blue:0.0 into:pref ] ;
+	[ self set:kPSKBackgroundColor fromRed:0.0 green:0.0 blue:0.0 into:pref ] ;
+	[ self set:kPSKPlotColor fromRed:0.0 green:1.0 blue:0.0 into:pref ] ;
 
 	[ modemSource setupDefaultPreferences:pref ] ;
 	[ modemDest setupDefaultPreferences:pref ] ;
@@ -157,9 +162,15 @@
 - (void)updateColorsFromPreferences:(Preferences*)pref
 {
 	NSColor *color, *sent, *bg, *plot ;
-	int version ;
+	int normalized ;
 
-	version = [ pref intValueForKey:kPrefVersion ] ;
+	normalized = [ pref intValueForKey:kPSKColorDefaultsNormalizedV1 ] ;
+	if ( normalized == 0 ) {
+		[ self set:kPSKTextColor fromRed:1.0 green:0.8 blue:0.0 into:pref ] ;
+		[ self set:kPSKSentColor fromRed:1.0 green:0.8 blue:0.0 into:pref ] ;
+		[ self set:kPSKBackgroundColor fromRed:0.0 green:0.0 blue:0.0 into:pref ] ;
+		[ pref setInt:1 forKey:kPSKColorDefaultsNormalizedV1 ] ;
+	}
 	
 	color = [ self getColor:kPSKTextColor from:pref ] ;
 	sent = [ self getColor:kPSKSentColor from:pref ] ;

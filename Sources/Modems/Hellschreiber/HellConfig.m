@@ -22,6 +22,8 @@
 #import "CMPCO.h"
 #import "CMDSPWindow.h"
 
+static NSString *kHellColorDefaultsNormalizedV1 = @"HellColorDefaultsNormalizedV1" ;
+
 @implementation HellConfig
 
 //  Hellschreiber Config
@@ -203,7 +205,10 @@
 	[ pref setInt:1 forKey:kFastPlayback ] ;
 	[ pref setInt:1 forKey:kHellSideband ] ;			// default to USB
 	[ pref setFloat:0.0 forKey:kHellOffset ] ;			// and no VFO offset
-	[ self retrieveActualColorPreferences:pref ] ;
+	[ self set:kHellTextColor fromRed:1.0 green:0.8 blue:0.0 into:pref ] ;
+	[ self set:kHellSentColor fromRed:1.0 green:0.8 blue:0.0 into:pref ] ;
+	[ self set:kHellBackgroundColor fromRed:0.0 green:0.0 blue:0.0 into:pref ] ;
+	[ self set:kHellPlotColor fromRed:0.0 green:1.0 blue:0.0 into:pref ] ;
 
 	[ modemSource setupDefaultPreferences:pref ] ;
 	[ modemDest setupDefaultPreferences:pref ] ;
@@ -215,6 +220,15 @@
 - (void)updateColorsFromPreferences:(Preferences*)pref
 {
 	NSColor *color, *sent, *bg, *plot ;
+	int normalized ;
+
+	normalized = [ pref intValueForKey:kHellColorDefaultsNormalizedV1 ] ;
+	if ( normalized == 0 ) {
+		[ self set:kHellTextColor fromRed:1.0 green:0.8 blue:0.0 into:pref ] ;
+		[ self set:kHellSentColor fromRed:1.0 green:0.8 blue:0.0 into:pref ] ;
+		[ self set:kHellBackgroundColor fromRed:0.0 green:0.0 blue:0.0 into:pref ] ;
+		[ pref setInt:1 forKey:kHellColorDefaultsNormalizedV1 ] ;
+	}
 
 	color = [ self getColor:kHellTextColor from:pref ] ;
 	sent = [ self getColor:kHellSentColor from:pref ] ;

@@ -27,6 +27,9 @@
 #import "RTTYTxConfig.h"
 #import "TextEncoding.h"
 #import "VUMeter.h"
+#include <math.h>
+
+static NSString *kRTTYColorDefaultsNormalizedV2Prefix = @"RTTYColorDefaultsNormalizedV2." ;
 
 @implementation RTTYConfig
 
@@ -210,6 +213,19 @@
 - (void)updateColorsFromPreferences:(Preferences*)pref configSet:(RTTYConfigSet*)set
 {
 	NSColor *color, *sent, *bg, *plot ;
+	NSString *normalizeKey ;
+	int normalizedV2 ;
+
+	normalizeKey = [ kRTTYColorDefaultsNormalizedV2Prefix stringByAppendingString:( set->textColor ? set->textColor : @"default" ) ] ;
+	normalizedV2 = [ pref intValueForKey:normalizeKey ] ;
+	if ( normalizedV2 == 0 ) {
+		// Canonical RTTY defaults should be amber text on black background.
+		// Apply once across machines to align legacy preference variations.
+		[ self set:set->textColor fromRed:1.0 green:0.8 blue:0.0 into:pref ] ;
+		[ self set:set->sentColor fromRed:1.0 green:0.8 blue:0.0 into:pref ] ;
+		[ self set:set->backgroundColor fromRed:0.0 green:0.0 blue:0.0 into:pref ] ;
+		[ pref setInt:1 forKey:normalizeKey ] ;
+	}
 		
 	color = [ self getColor:set->textColor from:pref ] ;
 	sent = [ self getColor:set->sentColor from:pref ] ;

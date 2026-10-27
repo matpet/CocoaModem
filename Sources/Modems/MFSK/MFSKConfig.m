@@ -22,6 +22,8 @@
 #import "Plist.h"
 #import "PTT.h"
 
+static NSString *kMFSKColorDefaultsNormalizedV1 = @"MFSKColorDefaultsNormalizedV1" ;
+
 @implementation MFSKConfig
 
 //  MFSK Config
@@ -287,7 +289,7 @@
 	[ self set:kMFSKTextColor fromRed:1.0 green:0.8 blue:0.0 into:pref ] ;
 	[ self set:kMFSKBackgroundColor fromRed:0.0 green:0.0 blue:0.0 into:pref ] ;
 	[ self set:kMFSKPlotColor fromRed:0.0 green:1.0 blue:0.0 into:pref ] ;
-	[ self set:kMFSKSentColor fromRed:0.0 green:0.8 blue:1.0 into:pref ] ;
+	[ self set:kMFSKSentColor fromRed:1.0 green:0.8 blue:0.0 into:pref ] ;
 }
 
 //  preferences maintainence, called from MFSK.m
@@ -305,6 +307,15 @@
 - (void)updateColorsFromPreferences:(Preferences*)pref
 {
 	NSColor *color, *sent, *bg, *plot ;
+	int normalized ;
+
+	normalized = [ pref intValueForKey:kMFSKColorDefaultsNormalizedV1 ] ;
+	if ( normalized == 0 ) {
+		[ self set:kMFSKTextColor fromRed:1.0 green:0.8 blue:0.0 into:pref ] ;
+		[ self set:kMFSKSentColor fromRed:1.0 green:0.8 blue:0.0 into:pref ] ;
+		[ self set:kMFSKBackgroundColor fromRed:0.0 green:0.0 blue:0.0 into:pref ] ;
+		[ pref setInt:1 forKey:kMFSKColorDefaultsNormalizedV1 ] ;
+	}
 		
 	color = [ self getColor:kMFSKTextColor from:pref ] ;
 	sent = [ self getColor:kMFSKSentColor from:pref ] ;

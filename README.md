@@ -36,15 +36,30 @@ See ATTRIBUTION.md for project provenance and attribution notes.
 ## Building
 
 - Open `cocoaModem 2.0/cocoaModem 2.0.xcodeproj` in Xcode.
-- Build products are written to `Builds/<Configuration>/`, for example `Builds/Release/cocoaModem 2.1rc5.app`.
+- Build products are written to `Builds/<Configuration>/`, for example `Builds/Release/cocoaModem 2.1rc6.app`.
 - Put packaged release archives in `Builds/Packages/`.
 - Build a universal binary when distributing to both Apple Silicon and Intel Macs.
 - Current compatibility work has been validated on macOS 15.7.x.
+
+## Signed + Notarized Universal Release
+
+- Ensure the active developer directory points to full Xcode (not Command Line Tools only):
+	- `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
+- Create a notarytool keychain profile once:
+	- `xcrun notarytool store-credentials <profile-name> --apple-id <apple-id> --team-id <team-id> --password <app-specific-password>`
+- Export required environment variables:
+	- `export DEVELOPER_ID_APP="Developer ID Application: Your Name (TEAMID)"`
+	- `export NOTARY_KEYCHAIN_PROFILE="<profile-name>"`
+- Build, sign, notarize, and staple in one step:
+	- `./Scripts/build_release_notarize.sh`
+
+This script produces a universal Release app in `Builds/Release/` and a notarized zip in `Releases/`.
 
 ## Release History
 
 - Original cocoaModem created by W7AY, Kok Chen.
 - Repository updated to restore compatibility with current macOS releases.
 - Current modernization pass includes universal Apple Silicon and Intel builds, Intel launch fixes, and native system appearance behavior on modern macOS.
+- 2.1rc6 aligns default RX/TX panel colors across main/sub receivers and modem families, updates app icon resources for current macOS Finder display, and stabilizes universal Debug overwrite workflow naming.
 - 2.1rc5 labels the app bundle and visible app identity as RC5, clarifies the PSK table UI as PSK31-only, and sanitizes unsupported transmit text punctuation to avoid keyboard encoding alerts.
 - 2.1rc4 restores functional external FSK RTTY transmit behavior, aligns ext-FSK keying with the AFSK path, and includes related Wideband/Dual RTTY UI-runtime corrections on current macOS.

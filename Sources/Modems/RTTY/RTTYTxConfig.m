@@ -153,7 +153,8 @@ static float stopDuration[3] = { 1.0, 1.5, 2.0 } ;
 	rttyRxControl = control ;
 	
 	if ( configSet.stopBits ) [ pref setFloat:1.5 forKey:configSet.stopBits ] ;
-	[ self set:configSet.sentColor fromRed:0.0 green:0.8 blue:1.0 into:pref ] ;
+	// Keep TX text color aligned with RX default amber for consistent panels.
+	[ self set:configSet.sentColor fromRed:1.0 green:0.8 blue:0.0 into:pref ] ;
 	[ modemDest setupDefaultPreferences:pref ] ;
 	if ( equalizer ) [ equalizer setupDefaultPreferences:pref ] ;
 }
