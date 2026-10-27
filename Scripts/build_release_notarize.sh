@@ -9,7 +9,7 @@ set -euo pipefail
 #   PROJECT_PATH (default: cocoaModem 2.0/cocoaModem 2.0.xcodeproj)
 #   TARGET_NAME (default: cocoaModem 2.0)
 #   CONFIGURATION (default: Release)
-#   APP_NAME (default: cocoaModem 2.1rc5.app)
+#   APP_NAME (default: cocoaModem 2.1rc6.app)
 #   BUNDLE_OUTPUT_DIR (default: Builds/Release)
 #   ZIP_OUTPUT_DIR (default: Releases)
 
@@ -32,7 +32,7 @@ require_cmd plutil
 PROJECT_PATH="${PROJECT_PATH:-cocoaModem 2.0/cocoaModem 2.0.xcodeproj}"
 TARGET_NAME="${TARGET_NAME:-cocoaModem 2.0}"
 CONFIGURATION="${CONFIGURATION:-Release}"
-APP_NAME="${APP_NAME:-cocoaModem 2.1rc5.app}"
+APP_NAME="${APP_NAME:-cocoaModem 2.1rc6.app}"
 BUNDLE_OUTPUT_DIR="${BUNDLE_OUTPUT_DIR:-Builds/Release}"
 ZIP_OUTPUT_DIR="${ZIP_OUTPUT_DIR:-Releases}"
 

@@ -70,6 +70,8 @@ typedef struct {
 	float currentLevel ;				//  v0.85
 	float currentDB ;					//	v0.88d
 	float dBmin, dBmax ;				//  c0.88d
+	Boolean useSoftwareInputGain ;
+	float softwareInputGain ;
 }
 
 - (int)channel ;						//  v0.85

@@ -18,6 +18,7 @@
 
 	- (void)setChannel:(int)n ;
 	- (void)vfoOffsetChanged ;
+	- (void)boostChanged ;
 
 	@end
 

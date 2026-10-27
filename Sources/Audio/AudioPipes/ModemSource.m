@@ -178,6 +178,9 @@
 			inbuf += channels ;
 		}
 	}
+	if ( useSoftwareInputGain && fabs( softwareInputGain-1.0 ) > 0.0001 ) {
+		for ( i = 0; i < 1024; i++ ) clientBuffer[i] *= softwareInputGain ;
+	}
 	//  update our (CMTappedPipe) data source info
 	data->samplingRate = 11025.0 ;
 	data->array = &clientBuffer[channel*512] ;
@@ -611,7 +614,11 @@
 		[ inputChannel selectItemAtIndex:channel ] ;		// v0.50 allow multi-channel
 
 	//  setup input pad
-	pad = [ pref floatValueForKey:[ deviceName stringByAppendingString:kInputPad ] ] ;
+	pad = [ [ NSUserDefaults standardUserDefaults ] floatForKey:@"SoftwareInputBoostDB" ] ;
+	if ( pad < 0.0 || pad > 24.0 ) {
+		pad = [ pref floatValueForKey:[ deviceName stringByAppendingString:kInputPad ] ] ;
+		if ( pad < 0.0 || pad > 24.0 ) pad = 12.0 ;
+	}
 	if ( dbPad ) {
 		[ dbPad setStringValue:[ NSString stringWithFormat:@"%d", (int)pad ] ] ;
 		[ Messages logMessage:"Updating input pad to %d from plist", (int)pad ] ;

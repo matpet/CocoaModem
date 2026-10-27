@@ -12,6 +12,7 @@
 #import "Messages.h"
 #import "TextEncoding.h"
 #import "audioutils.h"
+#include <math.h>
 
 
 @implementation ModemAudio
@@ -40,6 +41,8 @@
 		dbSlider = scalarSlider = nil ;
 		nonOOKLevel = 0.95 ;
 		dbPad = nil ;
+		useSoftwareInputGain = NO ;
+		softwareInputGain = 1.0 ;
 		currentDB = dBmin = dBmax = 0 ;							//  v0.88d
 		for ( i = 0; i < MAXDEVICES; i++ ) {
 			s = &info[i] ;
@@ -665,19 +668,27 @@ static int selectableSampleRate[6] = { 11025, 16000, 32000, 44100, 48000, 96000 
 	AudioValueRange range ;
 	UInt32 datasize ;
 	OSStatus status ;
+	Boolean hasDBRange ;
+	Boolean softwareBoostEnabled ;
+	id boostPreference ;
+	float softwareBoostDB ;
+	float targetDB, hardwareDB, softwareDB ;
+	float inputPadDB ;
 	
 	if ( selectedSoundCard == nil || ( dbSlider == nil && scalarSlider == nil ) ) return ;
+
+	boostPreference = [ [ NSUserDefaults standardUserDefaults ] objectForKey:@"SoftwareInputBoost" ] ;
+	softwareBoostEnabled = ( boostPreference == nil ) ? YES : ( [ [ NSUserDefaults standardUserDefaults ] boolForKey:@"SoftwareInputBoost" ] ? YES : NO ) ;
+	softwareBoostDB = [ [ NSUserDefaults standardUserDefaults ] floatForKey:@"SoftwareInputBoostDB" ] ;
+	if ( softwareBoostDB < 0.0 || softwareBoostDB > 24.0 ) softwareBoostDB = 12.0 ;
 	
 	//  first check range
-	if ( [ self getDBRange:&range ] == NO || ( range.mMaximum - range.mMinimum ) < 0.1 ) {
-		if ( dbSlider ) {
-			[ dbSlider setEnabled:NO ] ;
-			[ dbSlider setFloatValue:0.0 ] ;
-		}
-		if ( scalarSlider ) {
-			[ scalarSlider setEnabled:NO ] ;
-			[ scalarSlider setFloatValue:1.0 ] ;
-		}
+	hasDBRange = ( [ self getDBRange:&range ] == YES && ( range.mMaximum - range.mMinimum ) >= 0.1 ) ;
+	if ( hasDBRange == NO ) {
+		//  Some devices expose only scalar volume controls.
+		//  Keep sliders active and fall back to scalar gain control.
+		if ( dbSlider ) [ dbSlider setEnabled:YES ] ;
+		if ( scalarSlider ) [ scalarSlider setEnabled:YES ] ;
 	}
 	//  round pad to an int
 	if ( dbPad ) {
@@ -685,33 +696,77 @@ static int selectableSampleRate[6] = { 11025, 16000, 32000, 44100, 48000, 96000 
 		if ( idb < 0 ) idb = 0 ;
 		[ dbPad setIntValue:idb ] ;
 	}
+	inputPadDB = ( isInput ) ? 0.0 : ( ( dbPad ) ? [ dbPad floatValue ] : 0.0 ) ;
 		
 	if ( dbSlider ) {
-		db = range.mMaximum + [ dbSlider floatValue ] ;
-		if ( dbPad ) db -= [ dbPad intValue ] ;
-		if ( db < range.mMinimum ) db = range.mMinimum ;
-		
-		currentDB = db ;
-		dBmin = range.mMinimum ;
-		dBmax = range.mMaximum ;
+		if ( hasDBRange ) {
+			targetDB = range.mMaximum + [ dbSlider floatValue ] ;
+			targetDB -= inputPadDB ;
+			if ( softwareBoostEnabled && isInput ) targetDB += softwareBoostDB ;
+			if ( targetDB < -60.0 ) targetDB = -60.0 ;
 
-		datasize = sizeof( Float32 ) ;
-		//  try setting individual channel(s) first
-		if ( channels == 2 ) {
-			status = AudioDeviceSetProperty( selectedSoundCard->deviceID, nil, kLeftChannel, isInput, kAudioDevicePropertyVolumeDecibels, datasize, &db ) ;
-			if ( status == noErr ) status = AudioDeviceSetProperty( selectedSoundCard->deviceID, nil, kRightChannel, isInput, kAudioDevicePropertyVolumeDecibels, datasize, &db ) ;
+			hardwareDB = targetDB ;
+			if ( hardwareDB > range.mMaximum ) hardwareDB = range.mMaximum ;
+			if ( hardwareDB < range.mMinimum ) hardwareDB = range.mMinimum ;
+			
+			currentDB = hardwareDB ;
+			dBmin = range.mMinimum ;
+			dBmax = range.mMaximum ;
+
+			datasize = sizeof( Float32 ) ;
+			//  try setting individual channel(s) first
+			if ( channels == 2 ) {
+				status = AudioDeviceSetProperty( selectedSoundCard->deviceID, nil, kLeftChannel, isInput, kAudioDevicePropertyVolumeDecibels, datasize, &hardwareDB ) ;
+				if ( status == noErr ) status = AudioDeviceSetProperty( selectedSoundCard->deviceID, nil, kRightChannel, isInput, kAudioDevicePropertyVolumeDecibels, datasize, &hardwareDB ) ;
+			}
+			else {
+				status = AudioDeviceSetProperty( selectedSoundCard->deviceID, nil, channel+kLeftChannel, isInput, kAudioDevicePropertyVolumeDecibels, datasize, &hardwareDB ) ;
+			}
+			if ( status != noErr ) {
+				//  try master control if individual channel does not work
+				status = AudioDeviceSetProperty( selectedSoundCard->deviceID, nil, 0, isInput, kAudioDevicePropertyVolumeDecibels, datasize, &hardwareDB ) ;
+			}
+
+			if ( isInput ) {
+				if ( status == noErr ) {
+					softwareDB = targetDB - hardwareDB ;
+					if ( softwareDB > 0.01 ) {
+						softwareInputGain = pow( 10.0, softwareDB*0.05 ) ;
+						useSoftwareInputGain = YES ;
+					}
+					else {
+						softwareInputGain = 1.0 ;
+						useSoftwareInputGain = NO ;
+					}
+				}
+				else {
+					softwareInputGain = pow( 10.0, targetDB*0.05 ) ;
+					useSoftwareInputGain = YES ;
+				}
+			}
+			//  if already minimum, Core Audio will not call us back if set again to minimum
+			if ( hardwareDB <= range.mMinimum ) [ self fetchDeviceLevelFromCoreAudio ] ;
 		}
 		else {
-			status = AudioDeviceSetProperty( selectedSoundCard->deviceID, nil, channel+kLeftChannel, isInput, kAudioDevicePropertyVolumeDecibels, datasize, &db ) ;
+			//  dbSlider value is interpreted as attenuation in dB, mapped to scalar gain.
+			db = [ dbSlider floatValue ] ;
+			db -= inputPadDB ;
+			if ( softwareBoostEnabled && isInput ) {
+				db += softwareBoostDB ;
+				if ( db > softwareBoostDB ) db = softwareBoostDB ;
+			}
+			else {
+				if ( db > 0.0 ) db = 0.0 ;
+			}
+			if ( db < -60.0 ) db = -60.0 ;
+			nonOOKLevel = pow( 10.0, db*0.05 ) ;
+			if ( isInput ) {
+				softwareInputGain = nonOOKLevel ;
+				useSoftwareInputGain = YES ;
+			}
+			status = [ self setScalarAudioLevel:nonOOKLevel ] ;
 		}
-		if ( status != noErr ) {
-			//  try master control if individual channel does not work
-			status = AudioDeviceSetProperty( selectedSoundCard->deviceID, nil, 0, isInput, kAudioDevicePropertyVolumeDecibels, datasize, &db ) ;
-		}
-		//  if already minimum, Core Audio will not call us back if set again to minimum
-		if ( db <= range.mMinimum ) [ self fetchDeviceLevelFromCoreAudio ] ;
-		
-		[ dbSlider setEnabled:( status == noErr ) ] ;
+		[ dbSlider setEnabled:( hasDBRange ) ? ( status == noErr ) : YES ] ;
 	}
 		
 	if ( scalarSlider ) {

@@ -21,6 +21,26 @@
 {
 	[ super awakeFromModem:set rttyRxControl:control txConfig:inTxConfig ] ;
 	[ self setInterface:vfoOffsetField to:@selector(vfoOffsetChanged) ] ;	
+	if ( inputPad ) {
+		float boost = [ [ NSUserDefaults standardUserDefaults ] floatForKey:@"SoftwareInputBoostDB" ] ;
+		if ( boost < 0.0 || boost > 24.0 ) boost = 12.0 ;
+		[ inputPad setFloatValue:boost ] ;
+		[ self setInterface:inputPad to:@selector(boostChanged) ] ;
+	}
+}
+
+- (void)boostChanged
+{
+	float boost ;
+
+	if ( !inputPad ) return ;
+	boost = [ inputPad floatValue ] ;
+	if ( boost < 0.0 ) boost = 0.0 ;
+	if ( boost > 24.0 ) boost = 24.0 ;
+	[ inputPad setFloatValue:boost ] ;
+	[ [ NSUserDefaults standardUserDefaults ] setBool:YES forKey:@"SoftwareInputBoost" ] ;
+	[ [ NSUserDefaults standardUserDefaults ] setFloat:boost forKey:@"SoftwareInputBoostDB" ] ;
+	if ( modemSource ) [ modemSource setDeviceLevel:[ modemRxControl inputAttenuator ] ] ;
 }
 
 //  data arrived from sound source
@@ -61,6 +81,11 @@
 {
 	[ super updateFromPlist:pref rttyRxControl:control ] ;	
 	[ vfoOffsetField setIntValue:[ pref floatValueForKey:configSet.vfoOffset ] ] ;
+	if ( inputPad ) {
+		float boost = [ [ NSUserDefaults standardUserDefaults ] floatForKey:@"SoftwareInputBoostDB" ] ;
+		if ( boost < 0.0 || boost > 24.0 ) boost = 12.0 ;
+		[ inputPad setFloatValue:boost ] ;
+	}
 	[ self vfoOffsetChanged ] ;
 	return YES ;
 }

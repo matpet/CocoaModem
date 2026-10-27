@@ -53,6 +53,7 @@
 	int speed ;
 	NSSlider *inputAttenuator ;
 	CMTappedPipe *dataClient ;
+	float boost ;
 	
 	isActiveButton = interfaceVisible = isTransmit = configOpen = inputSamplingState = NO ;
 	sequenceNumber = 0 ;
@@ -76,7 +77,9 @@
 	}
 	if ( inputPad ) {
 		[ modemSource registerInputPad:inputPad ] ;
-		[ inputPad setFloatValue:0.0 ] ;
+		boost = [ [ NSUserDefaults standardUserDefaults ] floatForKey:@"SoftwareInputBoostDB" ] ;
+		if ( boost < 0.0 || boost > 24.0 ) boost = 12.0 ;
+		[ inputPad setFloatValue:boost ] ;
 	}
 }
 
@@ -354,6 +357,15 @@ static NSString *freqLabel[] = { @"500", @"1000", @"1500", @"2000", @"2500" } ;
 
 - (void)inputPadChanged
 {
+	float boost ;
+	
+	if ( !inputPad ) return ;
+	boost = [ inputPad floatValue ] ;
+	if ( boost < 0.0 ) boost = 0.0 ;
+	if ( boost > 24.0 ) boost = 24.0 ;
+	[ inputPad setFloatValue:boost ] ;
+	[ [ NSUserDefaults standardUserDefaults ] setBool:YES forKey:@"SoftwareInputBoost" ] ;
+	[ [ NSUserDefaults standardUserDefaults ] setFloat:boost forKey:@"SoftwareInputBoostDB" ] ;
 	[ modemSource setPadLevel:inputPad ] ;
 	[ modemSource setDeviceLevel:[ modemObj inputAttenuator:self ] ] ;
 }
