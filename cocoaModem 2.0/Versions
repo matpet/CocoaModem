@@ -1,6 +1,7 @@
 2.1rc6.2	(Oct 28, 2026)
 		Fixed TX/lock/active indicator updates on current macOS across Golden Gate and related modem interfaces.
 		Added software output-level fallback when hardware output controls are unavailable so the TX output slider remains effective.
+		Thanks to Steve, WB6RSE, for testing and feedback.
 		Built and validated as a universal Apple Silicon/Intel application.
 
 2.1rc6	(Oct 27, 2026)
