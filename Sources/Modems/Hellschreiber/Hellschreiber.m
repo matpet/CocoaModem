@@ -27,6 +27,7 @@
 #import "TextEncoding.h"
 #import "VUMeter.h"
 #import "Waterfall.h"
+#import "IndicatorCompat.h"
 #import <stdlib.h>						// for malloc()
 #import <string.h>						// for memset()
 
@@ -462,7 +463,7 @@
 		[ self setSentColor:NO view:receiveView textAttribute:receiveTextAttribute ] ;
 		[ transmitView select ] ;
 	}
-	[ transmitLight setBackgroundColor:indicatorColor ] ;
+	CMSetIndicatorColor( transmitLight, indicatorColor ) ;
 }
 
 //  this overrides the method in Modem.m that is called from the app
@@ -478,7 +479,7 @@
 		else {
 			//  enter a %[rx] character into the stream
 			[ transmitView insertInTextStorage:[ NSString stringWithFormat:@"%c", 5 /*^E*/ ] ] ;
-			[ transmitLight setBackgroundColor:[ NSColor yellowColor ] ] ;
+			CMSetIndicatorColor( transmitLight, [ NSColor yellowColor ] ) ;
 		}
 	}
 }

@@ -18,6 +18,7 @@
 #import "RTTYWaterfall.h"
 #import "Transceiver.h"
 #import "WFRTTYConfig.h"
+#import "IndicatorCompat.h"
 
 
 @implementation LiteASCII
@@ -290,7 +291,7 @@
 		else {
 			//  enter a %[rx] character into the stream
 			[ txConfig transmitCharacter:5 /* ^E */ ] ;			//  v0.56d
-			[ transmitLight setBackgroundColor:[ NSColor yellowColor ] ] ;
+			CMSetIndicatorColor( transmitLight, [ NSColor yellowColor ] ) ;
 		}
 	}
 }

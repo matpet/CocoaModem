@@ -11,6 +11,7 @@
 #import "CWMonitor.h"
 #import "CWReceiver.h"
 #import "CWWaterfall.h"
+#import "IndicatorCompat.h"
 #import "Oscilloscope.h"
 #import "Plist.h"
 #import "WBCW.h"
@@ -29,7 +30,7 @@
 				[ view addSubview:controlView ] ;
 				if ( auxWindow ) [ auxWindow setTitle: (index == 0) ? NSLocalizedString( @"Main Receiver", nil ) : NSLocalizedString( @"Sub Receiver", nil ) ] ;
 				[ self setupWithClient:modem index:index ] ;
-				if ( activeIndicator ) [ activeIndicator setBackgroundColor:[ NSColor grayColor ] ] ;
+				if ( activeIndicator ) CMSetIndicatorColor( activeIndicator, [ NSColor grayColor ] ) ;
 				return self ;
 			}
 		}

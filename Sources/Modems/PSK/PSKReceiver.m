@@ -18,12 +18,12 @@
 #import "Preferences.h"
 #import "PSK.h"
 #import "PSKAuralMonitor.h"
+#import "IndicatorCompat.h"
 #import "PSKBrowserHub.h"
 #import "PSKControl.h"
 #import "PSKHub.h"
 #import "PSKMonitor.h"
 #import "Waterfall.h"
-#import "CMPCO.h"
 #import "CMDSPWindow.h"
 #import <math.h>
 
@@ -446,7 +446,7 @@ enum LockCondition {
 		}
 	}
 	if ( [ NSThread isMainThread ] ) {
-		[ transmitLight setBackgroundColor:color ] ;
+		CMSetIndicatorColor( transmitLight, color ) ;
 	}
 	else {
 		selectorValue = [ NSNumber numberWithInt:state ] ;

@@ -50,6 +50,7 @@
 		rateChangeBusy = NO ;
 		client = inClient ;
 		outputLevelKey = nil ;
+		useSoftwareOutputLevelFallback = NO ;
 			
 		resamplingPipeChannels = 1 ;
 		resamplingPipe = [ [ ResamplingPipe alloc ] initUnbufferedPipeWithSamplingRate:11025.0 channels:resamplingPipeChannels target:self ] ;
@@ -98,6 +99,7 @@
 		rateChangeBusy = NO ;
 		client = inClient ;
 		outputLevelKey = nil ;
+		useSoftwareOutputLevelFallback = NO ;
 			
 		resamplingPipeChannels = ch ;
 		resamplingPipe = [ [ ResamplingPipe alloc ] initUnbufferedPipeWithSamplingRate:11025.0 channels:resamplingPipeChannels target:self ] ;
@@ -298,12 +300,19 @@
 
 - (void)updateAttenuator
 {
-	float value, dB ;
+	float value, dB, level ;
 	
 	dB = [ outputAttenuator floatValue ] ;
 	//value = 0.707*pow( 10.0, dB/20.0 ) ;			// -3.0 dB FS peak
 	//value = 0.8414*pow( 10.0, dB/20.0 ) ;			// -1.5 dB FS peak
 	value = 0.8913*pow( 10.0, dB/20.0 ) ;			// v0.88 -1.5 dB FS peak instead of -3 dB (note: RTTY filter needs 6% headroom)
+
+	//  If hardware output volume is unavailable, use outputLevel as a software fallback scale.
+	if ( outputLevel && useSoftwareOutputLevelFallback ) {
+		level = [ outputLevel floatValue ] ;
+		if ( level < 0.0 ) level = 0.0 ; else if ( level > 1.0 ) level = 1.0 ;
+		value *= level ;
+	}
 	[ client setOutputScale:value ] ;
 }
 
@@ -352,6 +361,10 @@
 {
 	scalarSlider = outputLevel ;
 	[ self setDeviceLevelFromSlider ] ;
+	useSoftwareOutputLevelFallback = ( outputLevel && [ outputLevel isEnabled ] == NO ) ;
+	if ( useSoftwareOutputLevelFallback ) [ outputLevel setEnabled:YES ] ;
+	//  Keep TX output level effective even if Core Audio does not expose writable output volume.
+	[ self updateAttenuator ] ;
 }
 
 //	used by AMConfig and CWMonitor

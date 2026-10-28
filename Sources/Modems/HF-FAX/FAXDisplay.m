@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "FAXStepper.h"
+#include "IndicatorCompat.h"
 
 
 @implementation FAXDisplay
@@ -111,7 +112,7 @@ static int drawCount = 100 ;
 //  local
 - (void)displayRunLightColor:(NSColor*)color
 {
-	[ runLight setBackgroundColor:color ] ;
+	CMSetIndicatorColor( runLight, color ) ;
 	[ runLight setNeedsDisplay:YES ] ;
 }
 
@@ -226,7 +227,7 @@ static int drawCount = 100 ;
 
 	running = YES ;
 	paused = NO ;
-	[ runLight setBackgroundColor:[ NSColor greenColor ] ] ;
+	CMSetIndicatorColor( runLight, [ NSColor greenColor ] ) ;
 	if ( vsyncState == VSYNCSTARTWAIT ) vsyncState = VSYNCWAIT ;
 }
 
@@ -258,7 +259,7 @@ static int drawCount = 100 ;
 			vsyncState = VSYNCWAIT ;
 			[ self start ] ;
 			drawCount = 0 ;
-			[ runLight setBackgroundColor:[ NSColor yellowColor ] ] ;
+			CMSetIndicatorColor( runLight, [ NSColor yellowColor ] ) ;
 			[ self performSelectorOnMainThread:@selector(displayRunLightColor:) withObject:[ NSColor yellowColor ] waitUntilDone:NO ] ;
 		}
 		break ;
@@ -266,7 +267,7 @@ static int drawCount = 100 ;
 		//  pause after a STOP signal before waiting for START
 		if ( ++pauseCount > 10 ) {
 			paused = YES ;
-			[ runLight setBackgroundColor:[ NSColor redColor ] ] ;
+			CMSetIndicatorColor( runLight, [ NSColor redColor ] ) ;
 			vsyncState = VSYNCSTARTWAIT ;
 			sync = 0.0 ;
 		}
@@ -282,7 +283,7 @@ static int drawCount = 100 ;
 			[ self findHSyncAtRow:backingframe->displayRow ] ;
 			if ( linesFromTop == 32 ) {
 				[ self checkSyncBuffer ] ;
-				[ runLight setBackgroundColor:[ NSColor greenColor ] ] ;
+				CMSetIndicatorColor( runLight, [ NSColor greenColor ] ) ;
 				[ self performSelectorOnMainThread:@selector(displayRunLightColor:) withObject:[ NSColor greenColor ] waitUntilDone:NO ] ;
 			}
 		} 
@@ -415,7 +416,7 @@ static int drawCount = 100 ;
 	firstDraw = YES ;
 	[ super awakeFromNib ] ;
 	ppm = [ clockOffsetField floatValue ] ;						// A/D clock adjustment
-	[ runLight setBackgroundColor:[ NSColor redColor ] ] ;
+	CMSetIndicatorColor( runLight, [ NSColor redColor ] ) ;
 	
 	sframe = [ scroller frame ] ;
 	sframe.origin.y += 30.0 ;
@@ -527,7 +528,7 @@ static int drawCount = 100 ;
 	if ( [ pauseButton state ] == NSOnState ) {
 		[ pauseButton setState:NSOffState ] ;
 		[ pauseButton setTitle:NSLocalizedString( @"Pause", nil ) ] ;
-		[ runLight setBackgroundColor:[ NSColor greenColor ] ] ;
+		CMSetIndicatorColor( runLight, [ NSColor greenColor ] ) ;
 		running = YES ;
 	}
 	[ self start ] ;
@@ -550,11 +551,11 @@ static int drawCount = 100 ;
 		[ pauseButton setTitle:NSLocalizedString( @"Resume", nil ) ] ;
 		running = NO ;
 		paused = YES ;
-		[ runLight setBackgroundColor:[ NSColor redColor ] ] ;
+		CMSetIndicatorColor( runLight, [ NSColor redColor ] ) ;
 	}
 	else {
 		[ pauseButton setTitle:NSLocalizedString( @"Pause", nil ) ] ;
-		[ runLight setBackgroundColor:[ NSColor greenColor ] ] ;
+		CMSetIndicatorColor( runLight, [ NSColor greenColor ] ) ;
 		running = YES ;
 		paused = NO ;
 		if ( vsyncState == VSYNCSTARTWAIT ) vsyncState = VSYNCWAIT ;

@@ -351,6 +351,7 @@
 		84DA525109F6B059007B3C78 /* Config.m in Sources */ = {isa = PBXBuildFile; fileRef = 84DA524D09F6B059007B3C78 /* Config.m */; };
 		84DA525209F6B059007B3C78 /* Preferences.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 84DA524E09F6B059007B3C78 /* Preferences.h */; };
 		84DA525309F6B059007B3C78 /* Preferences.m in Sources */ = {isa = PBXBuildFile; fileRef = 84DA524F09F6B059007B3C78 /* Preferences.m */; };
+		A1B2C3D4E5F60718293A4B5D /* IndicatorCompat.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* IndicatorCompat.h */; };
 		84E368990CDD5062003D1849 /* TextEncoding.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 84E368980CDD5062003D1849 /* TextEncoding.h */; };
 		84E5D84D0CDF907E00A0767A /* splashPanel.h in CopyFiles */ = {isa = PBXBuildFile; fileRef = 84E5D84B0CDF907E00A0767A /* splashPanel.h */; };
 		84E5D84E0CDF907E00A0767A /* splashPanel.m in Sources */ = {isa = PBXBuildFile; fileRef = 84E5D84C0CDF907E00A0767A /* splashPanel.m */; };
@@ -413,6 +414,7 @@
 				84EB98F40B21269400434940 /* CWWaterfall.h in CopyFiles */,
 				84E6E9F30B5F6BE40051ADDD /* AMWaterfall.h in CopyFiles */,
 				84D7F37F0B7C219500CF3D0D /* NoiseUtils.h in CopyFiles */,
+				A1B2C3D4E5F60718293A4B5D /* IndicatorCompat.h in CopyFiles */,
 				84E368990CDD5062003D1849 /* TextEncoding.h in CopyFiles */,
 				84E5D84D0CDF907E00A0767A /* splashPanel.h in CopyFiles */,
 			);
@@ -429,6 +431,7 @@
 		84072DF709076B31006DA88B /* Copyright.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = Copyright.h; sourceTree = "<group>"; };
 		84072DF909076B31006DA88B /* cocoaModemParams.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = cocoaModemParams.h; sourceTree = "<group>"; };
 		84072DFC09076B31006DA88B /* Plist.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = Plist.h; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5C /* IndicatorCompat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IndicatorCompat.h; sourceTree = "<group>"; };
 		84072DFD09076B31006DA88B /* cocoaModemDebug.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = cocoaModemDebug.h; sourceTree = "<group>"; };
 		84072E2509076BF9006DA88B /* Application.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = Application.h; sourceTree = "<group>"; };
 		84072E2609076BF9006DA88B /* Application.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = Application.m; sourceTree = "<group>"; };
@@ -1255,6 +1258,7 @@
 				84072DF709076B31006DA88B /* Copyright.h */,
 				84072DF909076B31006DA88B /* cocoaModemParams.h */,
 				84072DFC09076B31006DA88B /* Plist.h */,
+				A1B2C3D4E5F60718293A4B5C /* IndicatorCompat.h */,
 				84072DFD09076B31006DA88B /* cocoaModemDebug.h */,
 				84E368980CDD5062003D1849 /* TextEncoding.h */,
 			);
@@ -3333,7 +3337,7 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_NAME = "cocoaModem 2.1rc6";
+				PRODUCT_NAME = "cocoaModem 2.1rc6.2";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -3361,7 +3365,7 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_NAME = "cocoaModem 2.1rc6";
+				PRODUCT_NAME = "cocoaModem 2.1rc6.2";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;
@@ -3393,7 +3397,7 @@
 				INSTALL_PATH = "$(HOME)/Applications";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
 				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_NAME = "cocoaModem 2.1rc6";
+				PRODUCT_NAME = "cocoaModem 2.1rc6.2";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=macosx*]" = "";
 				SDKROOT = macosx;
 				WRAPPER_EXTENSION = app;

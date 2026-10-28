@@ -23,6 +23,7 @@
 #import "RTTYRxControl.h"
 #import "RTTYTxConfig.h"
 #import "TextEncoding.h"
+#import "IndicatorCompat.h"
 
 
 @implementation RTTYInterface
@@ -285,7 +286,7 @@
 	[ transmitView select ] ;
 	[ a.receiver enableReceiver:YES ] ;
 	if ( b.isAlive ) [ b.receiver enableReceiver:YES ] ;
-	[ transmitLight setBackgroundColor:indicatorColor ] ;
+	CMSetIndicatorColor( transmitLight, indicatorColor ) ;
 }
 
 /* local */
@@ -409,7 +410,7 @@
 		//[ self setSentColor:YES ] ;
 		//  set text color in receive view and turn on transmit (v0.65 delay changed from 0.5 to 0.3 sec)
 		transmitStartTimer = [ NSTimer scheduledTimerWithTimeInterval:0.3 target:self selector:@selector(delayTransmit:) userInfo:self repeats:NO ] ;
-		[ transmitLight setBackgroundColor:indicatorColor ] ;
+		CMSetIndicatorColor( transmitLight, indicatorColor ) ;
 		
 		[ self flushClickBuffer ] ;			//  v0.89
 	}
@@ -482,7 +483,7 @@
 		}
 		else {
 			[ transmitView insertInTextStorage:[ NSString stringWithFormat:@"%c", 5 /*^E*/ ] ] ;
-			[ transmitLight setBackgroundColor:[ NSColor yellowColor ] ] ;
+			CMSetIndicatorColor( transmitLight, [ NSColor yellowColor ] ) ;
 		}
 	}
 }

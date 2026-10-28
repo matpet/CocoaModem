@@ -20,6 +20,7 @@
 #import "SITORReceiver.h"
 #import "Spectrum.h"
 #import "TextEncoding.h"
+#import "IndicatorCompat.h"
 
 
 @implementation SITORRxControl
@@ -37,7 +38,7 @@
 				[ view addSubview:controlView ] ;
 				if ( auxWindow ) [ auxWindow setTitle: (index == 0) ? @"Receiver A" : @"Receiver B" ] ;
 				[ self setupWithClient:modem index:index ] ;
-				if ( activeIndicator ) [ activeIndicator setBackgroundColor:[ NSColor grayColor ] ] ;
+				if ( activeIndicator ) CMSetIndicatorColor( activeIndicator, [ NSColor grayColor ] ) ;
 				return self ;
 			}
 		}
@@ -101,7 +102,7 @@
 		color = errorColor ;
 		break ;
 	}
-	if ( lockedIndicator ) [ lockedIndicator setBackgroundColor:color ] ;
+	if ( lockedIndicator ) CMSetIndicatorColor( lockedIndicator, color ) ;
 }
 
 //  set up to use SITOR Receiver

@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include "SerialPort.h"
 #include "microKEYER.h"
+#include "IndicatorCompat.h"
 
 
 @implementation PTT
@@ -198,13 +199,13 @@ static Boolean serialDebugEnabled( void )
 	if ( [ ptt setKey:useRTS active:activeHigh ] ) {
 		[ keyButton setState:NSOnState ] ;
 		[ keyButton setTitle:@"Unkey" ] ;
-		[ keyLight setBackgroundColor:[ NSColor redColor ] ] ;
+		CMSetIndicatorColor( keyLight, [ NSColor redColor ] ) ;
 		return YES ;
 	}
 	else {
 		[ keyButton setState:NSOffState ] ;
 		[ keyButton setTitle:@"Key" ] ;
-		[ keyLight setBackgroundColor:[ NSColor grayColor ] ] ;
+		CMSetIndicatorColor( keyLight, [ NSColor grayColor ] ) ;
 		return NO ;
 	}
 }
@@ -213,10 +214,10 @@ static Boolean serialDebugEnabled( void )
 {
 	[ keyButton setState:NSOffState ] ;
 	[ keyButton setTitle:@"Key" ] ;
-	[ keyLight setBackgroundColor:[ NSColor grayColor ] ] ;
+	CMSetIndicatorColor( keyLight, [ NSColor grayColor ] ) ;
 
 	if ( ![ ptt setUnkey:useRTS active:activeHigh ] ) {
-		[ keyLight setBackgroundColor:[ NSColor grayColor ] ] ;
+		CMSetIndicatorColor( keyLight, [ NSColor grayColor ] ) ;
 		return NO ;
 	}
 	return YES ;

@@ -12,11 +12,11 @@
 #import "ModemSource.h"
 #import "Plist.h"
 #import "VUMeter.h"
+#import "IndicatorCompat.h"
 
 
 @implementation SynchAM
 
-//  SynchAM : Modem : NSObject
 
 - (Boolean)allowQSOFieldCapture
 {
@@ -236,7 +236,7 @@
 		}
 	}
 	if ( state != lockState ) {
-		[ lockLight setBackgroundColor:color ] ;
+		CMSetIndicatorColor( lockLight, color ) ;
 		lockState = state ;
 	}
 	[ waterfall setTrack:f ] ;

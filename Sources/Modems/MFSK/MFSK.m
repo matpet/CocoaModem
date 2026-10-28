@@ -29,6 +29,7 @@
 #import "Transceiver.h"
 #import "VUMeter.h"
 #import "ScrollingField.h"
+#import "IndicatorCompat.h"
 
 @implementation MFSK
 
@@ -716,7 +717,7 @@
 		indicatorColor =  [ NSColor yellowColor ] ;
 		break ;
 	}
-	[ transmitLight setBackgroundColor:indicatorColor ] ;
+	CMSetIndicatorColor( transmitLight, indicatorColor ) ;
 }
 
 - (void)changeTransmitStateTo:(Boolean)state

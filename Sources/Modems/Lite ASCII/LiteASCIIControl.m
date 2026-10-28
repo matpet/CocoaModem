@@ -9,6 +9,7 @@
 #import "LiteASCIIControl.h"
 #import "LiteASCII.h"
 #import "ASCIIReceiver.h"
+#import "IndicatorCompat.h"
 
 
 @implementation LiteASCIIControl
@@ -28,7 +29,7 @@
 				[ view addSubview:controlView ] ;
 				if ( auxWindow ) [ auxWindow setTitle: (index == 0) ? NSLocalizedString( @"ASCII Receiver", nil ) : NSLocalizedString( @"Sub Receiver", nil ) ] ;
 				[ self setupWithClient:modem index:index ] ;
-				if ( activeIndicator ) [ activeIndicator setBackgroundColor:[ NSColor grayColor ] ] ;
+				if ( activeIndicator ) CMSetIndicatorColor( activeIndicator, [ NSColor grayColor ] ) ;
 				return self ;
 			}
 		}

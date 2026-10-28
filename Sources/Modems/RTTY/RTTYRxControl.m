@@ -23,6 +23,7 @@
 #import "Spectrum.h"
 #import "SubDictionary.h"
 #import "TextEncoding.h"
+#import "IndicatorCompat.h"
 
 
 @implementation RTTYRxControl
@@ -58,7 +59,7 @@
 				[ view addSubview:controlView ] ;
 				if ( auxWindow ) [ auxWindow setTitle: (index == 0) ? NSLocalizedString( @"Main Receiver", nil ) : NSLocalizedString( @"Sub Receiver", nil ) ] ;
 				[ self setupWithClient:modem index:index ] ;
-				if ( activeIndicator ) [ activeIndicator setBackgroundColor:[ NSColor grayColor ] ] ;
+				if ( activeIndicator ) CMSetIndicatorColor( activeIndicator, [ NSColor grayColor ] ) ;
 				return self ;
 			}
 		}
@@ -237,7 +238,7 @@ static CMTonePair adjustTone( CMTonePair *base, int usb, int reverse, float delt
 
 - (void)useAsTransmitTonePair:(Boolean)state
 {
-	if ( activeIndicator ) [ activeIndicator setBackgroundColor:(state) ? [ NSColor yellowColor ] : [ NSColor grayColor ] ] ;
+	if ( activeIndicator ) CMSetIndicatorColor( activeIndicator, ( state ) ? [ NSColor yellowColor ] : [ NSColor grayColor ] ) ;
 	activeTransmitter = state ;
 }
 

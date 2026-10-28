@@ -40,6 +40,7 @@
 			
 		DestClient *client ;
 		Boolean useMenus ;
+		Boolean useSoftwareOutputLevelFallback ;
 		
 		Boolean rateChangeBusy ;
 		

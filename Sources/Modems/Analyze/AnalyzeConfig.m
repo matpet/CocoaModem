@@ -9,6 +9,7 @@
 #import "AnalyzeConfig.h"
 #include "Analyze.h"
 #include "AnalyzeScope.h"
+#include "IndicatorCompat.h"
 #include "ModemSource.h"
 #include "RTTYRxControl.h"
 #include "VUMeter.h"
@@ -123,13 +124,13 @@
 	switch ( state ) {
 	case 0:
 	default:
-		[ sync setBackgroundColor:[ NSColor redColor ] ] ;
+		CMSetIndicatorColor( sync, [ NSColor redColor ] ) ;
 		break ;
 	case 1:
-		[ sync setBackgroundColor:[ NSColor yellowColor ] ] ;
+		CMSetIndicatorColor( sync, [ NSColor yellowColor ] ) ;
 		break ;
 	case 2:
-		[ sync setBackgroundColor:[ NSColor greenColor ] ] ;
+		CMSetIndicatorColor( sync, [ NSColor greenColor ] ) ;
 		break ;
 	}
 }

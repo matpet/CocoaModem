@@ -9,6 +9,7 @@
 #import "LiteRTTYControl.h"
 #import "LiteRTTY.h"
 #import "RTTYReceiver.h"
+#import "IndicatorCompat.h"
 
 
 @implementation LiteRTTYControl
@@ -26,7 +27,7 @@
 				[ view addSubview:controlView ] ;
 				if ( auxWindow ) [ auxWindow setTitle: (index == 0) ? NSLocalizedString( @"RTTY Receiver", nil ) : NSLocalizedString( @"Sub Receiver", nil ) ] ;
 				[ self setupWithClient:modem index:index ] ;
-				if ( activeIndicator ) [ activeIndicator setBackgroundColor:[ NSColor grayColor ] ] ;
+				if ( activeIndicator ) CMSetIndicatorColor( activeIndicator, [ NSColor grayColor ] ) ;
 				return self ;
 			}
 		}
